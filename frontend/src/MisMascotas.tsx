@@ -1,4 +1,3 @@
-import React from 'react'
 import './App.css'
 
 type Props = {
@@ -25,3 +24,4 @@ export default function MisMascotas({ onGoToConsulta }: Props) {
     </main>
   )
 }
+
