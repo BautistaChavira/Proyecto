@@ -1,4 +1,3 @@
-import React from 'react'
 import './App.css'
 
 export default function Home() {
@@ -49,3 +48,4 @@ export default function Home() {
     </main>
   )
 }
+
