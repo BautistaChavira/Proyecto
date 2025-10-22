@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 type Category = {
@@ -113,3 +113,4 @@ export default function Catalogo() {
     </main>
   )
 }
+
