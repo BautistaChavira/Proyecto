@@ -104,6 +104,12 @@ function startServer() {
 	// Middleware para parsear JSON y aumentar el límite si es necesario
 	app.use(express.json({ limit: '10mb' }));
 
+	// Simple request logger to help debug 404/CORS issues in production
+	app.use((req, _res, next) => {
+		console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl} Origin=${req.headers.origin}`);
+		next();
+	});
+
 	app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 	app.get('/tables', async (_req, res) => {
@@ -113,6 +119,44 @@ function startServer() {
 		} catch (err) {
 			console.error('Error fetching tables:', err);
 			res.status(500).json({ error: 'failed_to_list_tables' });
+		}
+	});
+
+	// API-prefixed endpoints for frontend compatibility
+	app.get('/api/categories', async (_req, res) => {
+		try {
+			const r = await pool.query('SELECT id, name, description, created_at FROM categories ORDER BY id');
+			res.json(r.rows);
+		} catch (err) {
+			console.error('Error fetching categories:', err);
+			res.status(500).json({ error: 'failed_to_fetch_categories' });
+		}
+	});
+
+	// Breeds endpoint: returns breeds from DB (optionally filter by category name)
+	app.get('/api/breeds', async (req, res) => {
+		try {
+			const category = req.query.category ? String(req.query.category) : undefined;
+			let r;
+			if (category) {
+				r = await pool.query(
+				`SELECT b.id, b.name, b.scientific_name, b.description, b.default_image_url, b.category_id, c.name AS category_name
+				 FROM breeds b LEFT JOIN categories c ON b.category_id = c.id
+				 WHERE c.name = $1
+				 ORDER BY b.name`,
+				[category]
+				);
+			} else {
+				r = await pool.query(
+					`SELECT b.id, b.name, b.scientific_name, b.description, b.default_image_url, b.category_id, c.name AS category_name
+					 FROM breeds b LEFT JOIN categories c ON b.category_id = c.id
+					 ORDER BY b.name`
+				);
+			}
+			res.json(r.rows);
+		} catch (err) {
+			console.error('Error fetching breeds:', err);
+			res.status(500).json({ error: 'failed_to_fetch_breeds' });
 		}
 	});
 
@@ -146,8 +190,19 @@ function startServer() {
 		}
 	});
 
+	// 404 fallback (returns JSON so frontend can handle it)
+	app.use((_req, res) => {
+		res.status(404).json({ error: 'not_found' });
+	});
+
+	// Generic error handler
+	app.use((err: any, _req: any, res: any, _next: any) => {
+		console.error('Unhandled error in request handler:', err && err.stack ? err.stack : err);
+		res.status(500).json({ error: 'internal_error' });
+	});
+
 	server = app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-    console.log('Press Ctrl+C to stop');
-  });
+	  console.log(`Server running at http://localhost:${PORT}`);
+	  console.log('Press Ctrl+C to stop');
+	});
 }
