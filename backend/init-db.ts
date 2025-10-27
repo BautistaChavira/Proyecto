@@ -35,7 +35,7 @@ async function main() {
   } catch (err: unknown) {
     console.error('Unable to connect to Postgres with admin URL:', adminUrl.toString());
     console.error(err instanceof Error ? err.message : String(err));
-    process.exit(1);
+    throw err;
   }	try {
 		const check = await adminClient.query('SELECT 1 FROM pg_database WHERE datname=$1', [targetDbName]);
 		if (check.rowCount === 0) {
@@ -49,7 +49,7 @@ async function main() {
   } catch (err: unknown) {
     console.error('Error while checking/creating database:', err instanceof Error ? err.message : String(err));
     await adminClient.end();
-    process.exit(1);
+    throw err;
   }	await adminClient.end();
 
 	// Now connect to the target database and run the init SQL
@@ -59,7 +59,7 @@ async function main() {
   } catch (err: unknown) {
     console.error('Unable to connect to target database:', defaultDbUrl);
     console.error(err instanceof Error ? err.message : String(err));
-    process.exit(1);
+    throw err;
   }	const sqlPath = path.join(__dirname, 'sql', 'init.sql');
 	let sql = '';
 	try {
@@ -68,7 +68,7 @@ async function main() {
     console.error('Cannot read init.sql at', sqlPath);
     console.error(err instanceof Error ? err.message : String(err));
     await targetClient.end();
-    process.exit(1);
+    throw err;
   }	try {
 		console.log('Running schema SQL...');
 		// Some SQL drivers don't accept multiple statements in a single query by default.
@@ -157,8 +157,6 @@ async function main() {
 	}
 }
 
-main().catch((err: unknown) => {
-	console.error('Unexpected error in init-db:', err instanceof Error ? err.stack : String(err));
-	process.exit(1);
-});
+// Export la función main para que pueda ser llamada desde index.ts
+export default main;
 
