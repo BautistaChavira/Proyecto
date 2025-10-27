@@ -26,6 +26,8 @@ export default function Catalogo() {
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES)
   const [breeds, setBreeds] = useState<Record<string, string[]>>(DEFAULT_BREEDS)
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     let mounted = true
 
@@ -34,9 +36,11 @@ export default function Catalogo() {
       .then((data) => {
         if (!mounted) return
         setCategories(data)
+        setError(null) // Limpiar error si existe
       })
       .catch((error) => {
         console.warn('Error fetching categories:', error)
+        setError('No se pudieron cargar las categorías del servidor. Mostrando datos por defecto.')
         // keep defaults on error
       })
 
@@ -48,7 +52,10 @@ export default function Catalogo() {
       })
       .catch((error) => {
         console.warn('Error fetching breeds:', error)
-        // keep defaults on error
+        // Si ya hay un error de categorías, no sobreescribimos el mensaje
+        if (!error) {
+          setError('No se pudieron cargar las razas del servidor. Mostrando datos por defecto.')
+        }
       })
 
     return () => {
@@ -89,6 +96,18 @@ export default function Catalogo() {
     <main className="content">
       <section className="cards">
         <h2 style={{ width: '100%', margin: '0 0 1rem 0' }}>Catálogo</h2>
+        {error && (
+          <div style={{ 
+            padding: '1rem', 
+            marginBottom: '1rem', 
+            backgroundColor: '#fff3cd', 
+            color: '#856404', 
+            borderRadius: '4px',
+            width: '100%'
+          }}>
+            {error}
+          </div>
+        )}
         <div className="catalog-grid">
           {categories.map((c) => (
             <article key={c.id} className="catalog-card" onClick={() => setSelected(c.id)}>
