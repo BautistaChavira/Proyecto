@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import './App.css'
+import { API_URLS, fetchWithTimeout } from './config'
 
 type Props = {
   onClose: () => void
@@ -12,36 +13,60 @@ export default function Login({ onClose, onLogin }: Props) {
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState<string | null>(null)
 
-  function submitLogin(e: React.FormEvent) {
+  async function submitLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (!username) {
-      setMessage('Introduce un nombre de usuario')
+    if (!username || !password) {
+      setMessage('Introduce usuario y contraseña')
       return
     }
-    // Simulate successful login
-    onLogin({ name: username })
-    onClose()
+    
+    try {
+      const response = await fetchWithTimeout<{ name: string }>(API_URLS.login, {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      })
+      onLogin(response)
+      onClose()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Error al iniciar sesión')
+    }
   }
 
-  function submitRegister(e: React.FormEvent) {
+  async function submitRegister(e: React.FormEvent) {
     e.preventDefault()
     if (!username || !password) {
       setMessage('Rellena usuario y contraseña')
       return
     }
-    // Simulate registration success -> auto login
-    onLogin({ name: username })
-    onClose()
+
+    try {
+      const response = await fetchWithTimeout<{ name: string }>(API_URLS.register, {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      })
+      onLogin(response)
+      onClose()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Error al registrar usuario')
+    }
   }
 
-  function submitRecover(e: React.FormEvent) {
+  async function submitRecover(e: React.FormEvent) {
     e.preventDefault()
     if (!username) {
       setMessage('Introduce tu nombre de usuario o email')
       return
     }
-    // Simulate recovery
-    setMessage('Si existe la cuenta, se ha enviado un correo de recuperación (simulado).')
+
+    try {
+      await fetchWithTimeout(API_URLS.recover, {
+        method: 'POST',
+        body: JSON.stringify({ username }),
+      })
+      setMessage('Si existe la cuenta, recibirás un email con instrucciones.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Error al procesar la recuperación')
+    }
   }
 
   return (

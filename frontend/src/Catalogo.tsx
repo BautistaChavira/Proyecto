@@ -19,15 +19,7 @@ const DEFAULT_BREEDS: Record<string, string[]> = {
   aves: ['Canario', 'Periquito', 'Cacatúa'],
 }
 
-function fetchWithTimeout(url: string, ms = 3000) {
-  return Promise.race([
-    fetch(url).then((r) => {
-      if (!r.ok) throw new Error('bad response')
-      return r.json()
-    }),
-    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
-  ])
-}
+import { API_URLS, fetchWithTimeout } from './config'
 
 export default function Catalogo() {
   const [selected, setSelected] = useState<string | null>(null)
@@ -36,27 +28,26 @@ export default function Catalogo() {
 
   useEffect(() => {
     let mounted = true
-    // Imaginary API endpoints
-    const categoriesUrl = 'http://localhost:4000/api/categories'
-    const breedsUrl = 'http://localhost:4000/api/breeds'
 
-    // Try fetch categories
-    fetchWithTimeout(categoriesUrl, 3000)
-      .then((data: any) => {
+    // Fetch categories
+    fetchWithTimeout<Category[]>(API_URLS.categories)
+      .then((data) => {
         if (!mounted) return
-        if (Array.isArray(data)) setCategories(data)
+        setCategories(data)
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn('Error fetching categories:', error)
         // keep defaults on error
       })
 
-    // Try fetch breeds mapping
-    fetchWithTimeout(breedsUrl, 3000)
-      .then((data: any) => {
+    // Fetch breeds mapping
+    fetchWithTimeout<Record<string, string[]>>(API_URLS.breeds)
+      .then((data) => {
         if (!mounted) return
-        if (data && typeof data === 'object') setBreeds(data)
+        setBreeds(data)
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn('Error fetching breeds:', error)
         // keep defaults on error
       })
 
@@ -113,4 +104,3 @@ export default function Catalogo() {
     </main>
   )
 }
-
