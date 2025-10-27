@@ -74,10 +74,32 @@ async function shutdown() {
 function startServer() {
 	const app = express();
 	// Configuración de CORS para permitir peticiones del frontend
-	app.use(cors({
-		origin: process.env.FRONTEND_URL || ['http://localhost:5173', 'http://localhost:4173'],
-		credentials: true
-	}));
+	// FRONTEND_URL puede ser una lista separada por comas de orígenes permitidos.
+	const allowedOrigins = (process.env.FRONTEND_URL || 'https://proyecto-tjb5.onrender.com,http://localhost:5173')
+		.split(',')
+		.map(s => s.trim())
+		.filter(Boolean);
+
+	// Añadimos Vary: Origin para cachés intermediarios
+	app.use((req, res, next) => {
+		res.header('Vary', 'Origin');
+		next();
+	});
+
+	const corsOptions = {
+		origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+			// allow server-to-server or tools with no origin
+			if (!origin) return callback(null, true);
+			if (allowedOrigins.includes(origin)) return callback(null, true);
+			return callback(new Error('Not allowed by CORS'));
+		},
+		credentials: true,
+		optionsSuccessStatus: 200
+	};
+
+	app.use(cors(corsOptions));
+	// Explicit preflight handling
+	app.options('*', cors(corsOptions));
 	
 	// Middleware para parsear JSON y aumentar el límite si es necesario
 	app.use(express.json({ limit: '10mb' }));
