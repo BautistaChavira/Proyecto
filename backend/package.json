@@ -5,6 +5,8 @@
   "scripts": {
     "start": "ts-node index.ts",
     "dev": "ts-node index.ts",
+    "init-db": "ts-node init-db.ts",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

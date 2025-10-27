@@ -157,6 +157,20 @@ async function main() {
 	}
 }
 
-// Export la función main para que pueda ser llamada desde index.ts
+// Exportar la función main para que pueda ser importada
 export default main;
+
+// Si se ejecuta directamente, iniciar el servidor después de la inicialización
+if (require.main === module) {
+  main()
+    .then(() => {
+      console.log('Database initialization completed, starting server...');
+      // Importar y ejecutar el servidor
+      import('./index');
+    })
+    .catch(err => {
+      console.error('Error in initialization:', err);
+      process.exit(1);
+    });
+}
 
