@@ -6,17 +6,45 @@
  * file to start an HTTP server (Express, Fastify, etc.) later.
  */
 
-// Start the DB init script, then start an Express server that exposes
-// simple endpoints the frontend can call. This file intentionally keeps
-// runtime logic minimal and reads DATABASE_URL from env (Render will set it).
+// Import dependencies
 import('dotenv/config');
 import('./init-db')
-	.then(() => startServer())
-	.catch(err => {
-		console.error('Database init failed at startup:', err);
-		// proceed to start server anyway so the app can surface errors via endpoints
-		startServer();
-	});
+  .then(() => startServer())
+  .catch(err => {
+    console.error('Database init failed at startup:', err);
+    // proceed to start server anyway so the app can surface errors via endpoints
+    startServer();
+  });
+
+// Manejar señales de terminación para cerrar limpiamente
+process.on('SIGTERM', () => {
+  console.info('SIGTERM recibido. Iniciando shutdown graceful...');
+  shutdown();
+});
+
+process.on('SIGINT', () => {
+  console.info('SIGINT recibido. Iniciando shutdown graceful...');
+  shutdown();
+});
+
+// Función de shutdown graceful
+async function shutdown() {
+  console.log('Iniciando shutdown del servidor...');
+  
+  // Cerrar el pool de base de datos
+  try {
+    await pool.end();
+    console.log('Conexiones de base de datos cerradas.');
+  } catch (err) {
+    console.error('Error cerrando conexiones de base de datos:', err);
+  }
+
+  // Dar tiempo para que se completen las operaciones pendientes
+  setTimeout(() => {
+    console.log('Shutdown completado.');
+    process.exit(0);
+  }, 1500);
+}
 
 import express from 'express';
 import cors from 'cors';
@@ -26,8 +54,14 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 function startServer() {
 	const app = express();
-	app.use(cors());
-	app.use(express.json());
+	// Configuración de CORS para permitir peticiones del frontend
+	app.use(cors({
+		origin: process.env.FRONTEND_URL || ['http://localhost:5173', 'http://localhost:4173'],
+		credentials: true
+	}));
+	
+	// Middleware para parsear JSON y aumentar el límite si es necesario
+	app.use(express.json({ limit: '10mb' }));
 
 	app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
