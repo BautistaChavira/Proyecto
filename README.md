@@ -1,21 +1,20 @@
-El proyecto de momento cuenta con la estructura básica del esqueleto de los elementos del frontend. Contiene solo los elementos de la interfaz sin un diseño estético
+En este segundo avance habilitaremos el backend y completaremos los scripts para que se pueda desplegar el servicio web de forma relativamente sencilla desde proveedores de servidores como render.
 
-<img width="1920" height="911" alt="{28EBE25C-D044-434F-8AB9-97FC6C06599F}" src="https://github.com/user-attachments/assets/62d2dc1e-31e5-48c4-a735-a8bc0e4de17f" />
+Primero que hay que aclarar que el despliegue se separa en varios pasos dadas las limitaciones del proveedor del servicio. En esta caso para render tenemos que hacer un contenedor solo para la base de datos y luego conectarnos a ella desde otro servicio contenedor
 
-La estructura del funcionamiento de la página es que lo que se carga se un solo dominio sin subdominios y toda la interactividad y redirecciones en realidad las maneja react
+Primero creamos un contendor para una base de datos de postgres
 
-Los distintos menús están separados en distintos archivos o componentes así que simplemente los desplegamos o vamos alternando como sea necesario, el código fue diseñado de la forma más modular posible
+<img width="322" height="401" alt="{D0B74EFC-6FCF-4807-BA2E-DFDA21DF1D07}" src="https://github.com/user-attachments/assets/f232959b-0eaa-4027-a886-7a8535ddde56" />
 
-Los botones ya redirigen entre componentes y los componentes que deberían de hacer consultas a bases de datos en realidad si tratan de hacer las consultas, el código ya hace llamadas a un endpoint, pero los nombres de las url que usé son solo placeholders dado que
-aún no completamos el desarrollo escencial del servidor de la api ni la base de datos. El front trata de hacer las consultas y al fallar porque ni las url estan bien ni los servidores existen, pone datos por defecto hardcodeados
 
-<img width="928" height="113" alt="image" src="https://github.com/user-attachments/assets/14b6b6f3-b7a4-402d-bd3e-60a871747e0f" />
+Dependiendo de la URL que nos de el proveedor del servicio o en cuál sea la URL de donde quiera que tengas tu base de datos, tendrás que modificar el script init-db.ts para que apunte a dicha url (o añadirla como variable de entorno, que sería lo ideal de hecho)
 
-La  página ya puede ser desplegada directamente, solo tienes que configurar tu hostinger o servidor para arrancar la página desde el directorio frontend, no desde la raíz del proyecto
+<img width="1224" height="201" alt="{AFE267F3-E038-4409-A8AA-5EBAF2C96721}" src="https://github.com/user-attachments/assets/49685d57-bedb-4de9-ba7c-111d7c16c1ad" />
 
-El directorio de backend de momento solo tiene la estructura básica de los archivos que vamos a necesitar para que puedas desplegar también la base de datos y la api de forma relativamente sencilla, pero los scripts y el sql que usaremos para generar la base de datos aún no
-están hechos
 
-<img width="367" height="170" alt="{3F9793DE-09AC-4AE0-B1FC-B013DC08BFB9}" src="https://github.com/user-attachments/assets/a9c336b0-00fc-4164-89ff-e4cfa6a03be3" />
+En mi caso para Render, se nos proporciona una URL para la BD, en mi caso puedo usar una URL interna que solo funciona entre servicios de Render que es más corta y segura
 
-(Trabajo en progreso)
+<img width="664" height="123" alt="image" src="https://github.com/user-attachments/assets/6a2daf93-7813-48da-921a-ce279398fee2" />
+
+
+Recordemos que en la linea del script se usa la url especificada por la variable de entorno o la que esta en el script, cualquiera de las dos forma debería funcionar pero por obvias cuestiones de seguridad no deberías de poner la url en el código dado que pues... bueno el código es público en github
