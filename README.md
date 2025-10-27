@@ -18,3 +18,6 @@ En mi caso para Render, se nos proporciona una URL para la BD, en mi caso puedo 
 
 
 Recordemos que en la linea del script se usa la url especificada por la variable de entorno o la que esta en el script, cualquiera de las dos forma debería funcionar pero por obvias cuestiones de seguridad no deberías de poner la url en el código dado que pues... bueno el código es público en github
+
+
+Desplegar el backend de forma similar al front solo debemos poner backend como directorio root y los build y start comand son tal cual esos. npm buil y npm start
