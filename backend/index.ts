@@ -1,20 +1,29 @@
-/**
- * index.ts
- *
- * Minimal backend entrypoint. It runs the database initialization script at
- * startup so the database and required tables exist. You can expand this
- * file to start an HTTP server (Express, Fastify, etc.) later.
- */
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import { pool } from './db';
+import initDb from './init-db';
 
-// Import dependencies
-import('dotenv/config');
-import('./init-db')
-  .then(() => startServer())
-  .catch(err => {
-    console.error('Database init failed at startup:', err);
-    // proceed to start server anyway so the app can surface errors via endpoints
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const app = express();
+let server: ReturnType<typeof app.listen>;
+
+// Función principal que inicia la aplicación
+async function main() {
+  try {
+    // Inicializar la base de datos
+    await initDb();
+    console.log('Database initialization completed successfully');
+    
+    // Iniciar el servidor Express
     startServer();
-  });
+  } catch (err) {
+    console.error('Error during startup:', err);
+    // Si hay un error fatal durante la inicialización, intentamos iniciar el servidor
+    // de todos modos para poder exponer el estado del error a través de los endpoints
+    startServer();
+  }
+}
 
 // Manejar señales de terminación para cerrar limpiamente
 process.on('SIGTERM', () => {
@@ -27,10 +36,26 @@ process.on('SIGINT', () => {
   shutdown();
 });
 
+// Iniciar la aplicación
+main().catch(err => {
+  console.error('Error fatal durante el inicio de la aplicación:', err);
+  process.exit(1);
+});
+
 // Función de shutdown graceful
 async function shutdown() {
   console.log('Iniciando shutdown del servidor...');
   
+  // Cerrar el servidor HTTP primero
+  if (server) {
+    await new Promise<void>((resolve) => {
+      server.close(() => {
+        console.log('Servidor HTTP cerrado.');
+        resolve();
+      });
+    });
+  }
+
   // Cerrar el pool de base de datos
   try {
     await pool.end();
@@ -45,12 +70,6 @@ async function shutdown() {
     process.exit(0);
   }, 1500);
 }
-
-import express from 'express';
-import cors from 'cors';
-import { pool } from './db';
-
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 function startServer() {
 	const app = express();
@@ -105,5 +124,8 @@ function startServer() {
 		}
 	});
 
-	app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+	server = app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+    console.log('Press Ctrl+C to stop');
+  });
 }
