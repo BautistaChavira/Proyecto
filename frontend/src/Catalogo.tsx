@@ -7,6 +7,15 @@ type Category = {
   img: string
 }
 
+type BreedRow = {
+  id: number | string
+  name: string
+  scientific_name?: string
+  description?: string
+  default_image_url?: string
+  category_name?: string
+}
+
 const DEFAULT_CATEGORIES: Category[] = [
   { id: 'perros', title: 'Perros', img: 'https://via.placeholder.com/800x400?text=Perros' },
   { id: 'gatos', title: 'Gatos', img: 'https://via.placeholder.com/800x400?text=Gatos' },
@@ -31,11 +40,17 @@ export default function Catalogo() {
   useEffect(() => {
     let mounted = true
 
-    // Fetch categories
-    fetchWithTimeout<Category[]>(API_URLS.categories)
+    // Fetch categories (transform DB rows into Category[] expected by UI)
+    fetchWithTimeout<any[]>(API_URLS.categories)
       .then((data) => {
         if (!mounted) return
-        setCategories(data)
+        // transform: use category name as id (slugified) and create a placeholder image
+        const transformed: Category[] = data.map((row) => ({
+          id: String(row.name).toLowerCase().replace(/\s+/g, '-'),
+          title: row.name,
+          img: `https://via.placeholder.com/800x400?text=${encodeURIComponent(row.name)}`,
+        }))
+        if (transformed.length > 0) setCategories(transformed)
         setError(null) // Limpiar error si existe
       })
       .catch((error) => {
@@ -44,11 +59,19 @@ export default function Catalogo() {
         // keep defaults on error
       })
 
-    // Fetch breeds mapping
-    fetchWithTimeout<Record<string, string[]>>(API_URLS.breeds)
-      .then((data) => {
+    // Fetch breeds list from backend and convert to mapping { categoryId: [breedNames] }
+    fetchWithTimeout<BreedRow[]>(API_URLS.breeds)
+      .then((rows) => {
         if (!mounted) return
-        setBreeds(data)
+        const map: Record<string, string[]> = {}
+        for (const r of rows) {
+          const cat = (r.category_name || 'unknown').toString().toLowerCase().replace(/\s+/g, '-')
+          map[cat] = map[cat] || []
+          map[cat].push(r.name)
+        }
+        // merge with defaults to ensure keys exist for known categories
+        const merged = { ...DEFAULT_BREEDS, ...map }
+        setBreeds(merged)
       })
       .catch((error) => {
         console.warn('Error fetching breeds:', error)
