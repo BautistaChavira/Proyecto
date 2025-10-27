@@ -21,7 +21,7 @@ import * as path from 'path';
 import { Client } from 'pg';
 
 async function main() {
-	const defaultDbUrl = process.env.DATABASE_URL || 'postgresql://mascotasdb_x9qx_user:MQsvfT3gvPOT1sCUBKnjo693EEnH6r8K@dpg-d3vt2024d50c73e5otqg-a/mascotasdb_x9qx';
+	const defaultDbUrl = process.env.DATABASE_URL || 'postgresql://mascotasdb_x9qx_user:MQsvfT3gvPOT1sCUBKnjo693EEnH6r8K@dpg-d3vt2024d50c73e5otqg-a/mascotasdb_x9qx'; //Esta url hay que cambiarla
 	const targetUrl = new URL(defaultDbUrl);
 	const targetDbName = (targetUrl.pathname || '/mascotas').replace(/^\//, '') || 'mascotas';
 
@@ -88,6 +88,68 @@ async function main() {
 		}
 
 		console.log('Schema applied successfully.');
+
+		// List tables in the public schema so the runtime console shows what's available
+		try {
+			const tablesRes = await targetClient.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename");
+			console.log('Tables in public schema:');
+			for (const r of tablesRes.rows) {
+				console.log(' -', r.tablename);
+			}
+		} catch (listErr: unknown) {
+			console.warn('Could not list tables:', listErr instanceof Error ? listErr.message : String(listErr));
+		}
+
+		// Ensure some seed data exists if the tables are empty. This is idempotent
+		try {
+			// categories
+			try {
+				const catCountRes = await targetClient.query('SELECT COUNT(*) AS c FROM categories');
+				const catCount = Number(catCountRes.rows[0]?.c ?? 0);
+				if (catCount === 0) {
+					console.log('No categories found — inserting seed categories...');
+					await targetClient.query(
+						`INSERT INTO categories(name, description) VALUES
+						($1,$2), ($3,$4)`,
+						['Perros', 'Categoría: Perros', 'Gatos', 'Categoría: Gatos']
+					);
+					console.log('Inserted seed categories.');
+				}
+			} catch (inner) {
+				console.warn('Skipping category seed (error):', inner instanceof Error ? inner.message : String(inner));
+			}
+
+			// users
+			try {
+				const userCountRes = await targetClient.query('SELECT COUNT(*) AS c FROM users');
+				const userCount = Number(userCountRes.rows[0]?.c ?? 0);
+				if (userCount === 0) {
+					console.log('No users found — inserting a demo user (no password)');
+					await targetClient.query('INSERT INTO users(email, name) VALUES ($1,$2)', ['demo@local', 'Demo User']);
+					console.log('Inserted demo user.');
+				}
+			} catch (inner) {
+				console.warn('Skipping user seed (error):', inner instanceof Error ? inner.message : String(inner));
+			}
+
+			// curiosidades
+			try {
+				const curCountRes = await targetClient.query('SELECT COUNT(*) AS c FROM curiosidades');
+				const curCount = Number(curCountRes.rows[0]?.c ?? 0);
+				if (curCount === 0) {
+					console.log('No curiosidades found — inserting a sample curiosidad...');
+					await targetClient.query(
+						'INSERT INTO curiosidades(title, content, tags) VALUES ($1,$2,$3)',
+						['¿Sabías que...?', 'Los perros tienen un sentido del olfato muy desarrollado.', ['perros','datos']]
+					);
+					console.log('Inserted sample curiosidad.');
+				}
+			} catch (inner) {
+				console.warn('Skipping curiosidades seed (error):', inner instanceof Error ? inner.message : String(inner));
+			}
+		} catch (seedErr: unknown) {
+			console.warn('Error while checking/inserting seed data:', seedErr instanceof Error ? seedErr.message : String(seedErr));
+		}
 	} catch (err: unknown) {
 		console.error('Error applying schema:', err instanceof Error ? err.message : String(err));
 	} finally {
@@ -99,5 +161,4 @@ main().catch((err: unknown) => {
 	console.error('Unexpected error in init-db:', err instanceof Error ? err.stack : String(err));
 	process.exit(1);
 });
-
 
