@@ -282,6 +282,32 @@ function startServer() {
 		}
 	})
 
+	app.post('/api/analyze-photo', async (req, res) => {
+  try {
+    const { image_base64 } = req.body as { image_base64?: string }
+
+    // Validación básica
+    if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'invalid_image_data' })
+    }
+
+    // Simulación de análisis (aquí iría el modelo real o llamada a API externa)
+    const simulatedResult = 'Raza: Labrador Retriever'
+    const simulatedConfidence = 0.92
+
+    // Log opcional para depurar
+    console.log('📸 Imagen recibida para análisis (base64, tamaño):', image_base64.length)
+
+    return res.json({
+      result: simulatedResult,
+      confidence: simulatedConfidence,
+    })
+  } catch (err) {
+    console.error('Analyze error:', err)
+    return res.status(500).json({ error: 'analyze_failed' })
+  }
+})
+
 	// API-prefixed endpoints for frontend compatibility
 	app.get('/api/categories', async (_req, res) => {
 		const startQuery = Date.now();
