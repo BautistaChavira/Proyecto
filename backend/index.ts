@@ -283,44 +283,47 @@ function startServer() {
 	})
 
 	app.post('/api/analyze-photo', async (req, res) => {
-  try {
-    const { image_base64 } = req.body as { image_base64?: string }
+		try {
+			const { image_base64 } = req.body as { image_base64?: string }
 
-    // Validación básica
-    if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'invalid_image_data' })
-    }
+			// Validación básica
+			if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
+				return res.status(400).json({ error: 'invalid_image_data' })
+			}
 
-    // Extraer metadata del base64
-    const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
-    if (!match) {
-      return res.status(400).json({ error: 'invalid_base64_format' })
-    }
+			// Extraer metadata del base64
+			const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
+			if (!match) {
+				return res.status(400).json({ error: 'invalid_base64_format' })
+			}
 
-    const contentType = match[1] // e.g. image/jpeg
-    const base64Data = match[2]
-    const buffer = Buffer.from(base64Data, 'base64')
+			const contentType = match[1] // e.g. image/jpeg
+			const base64Data = match[2]
+			const buffer = Buffer.from(base64Data, 'base64')
 
-    // Nombre de archivo temporal (puede ser fijo si no se guarda)
-    const filename = `upload.${contentType.split('/')[1]}`
+			// Nombre de archivo temporal (puede ser fijo si no se guarda)
+			const filename = `upload.${contentType.split('/')[1]}`
 
-    // Llamar al cliente de IA
-    const result = await identifyImageFromBuffer(buffer, filename, contentType)
+			// Reconstruir el string completo en formato Hugging Face
+			const fullBase64 = `data:${contentType};base64,${base64Data}`
 
-    return res.json({
-      result: result.breed,
-      confidence: result.confidence,
-    })
-  } catch (err) {
-    if (err instanceof AiError) {
-      console.error('AI error:', err.message)
-      return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
-    }
+			// Llamar al cliente de IA con el string completo
+			const result = await identifyImageFromBuffer(Buffer.from(fullBase64), filename, contentType)
 
-    console.error('Analyze error:', err)
-    return res.status(500).json({ error: 'analyze_failed' })
-  }
-})
+			return res.json({
+				result: result.breed,
+				confidence: result.confidence,
+			})
+		} catch (err) {
+			if (err instanceof AiError) {
+				console.error('AI error:', err.message)
+				return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
+			}
+
+			console.error('Analyze error:', err)
+			return res.status(500).json({ error: 'analyze_failed' })
+		}
+	})
 
 	// API-prefixed endpoints for frontend compatibility
 	app.get('/api/categories', async (_req, res) => {
