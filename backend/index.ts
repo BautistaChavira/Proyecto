@@ -7,7 +7,7 @@ import multer from 'multer';
 import bcrypt from 'bcrypt';
 
 import type { QueryResult } from 'pg'
-import { identifyImageFromBuffer, AiError } from './ai/aiClient';
+import { identifyImageFromBuffer, AiError } from './ai/aiClient'
 
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -291,18 +291,32 @@ function startServer() {
       return res.status(400).json({ error: 'invalid_image_data' })
     }
 
-    // Simulación de análisis (aquí iría el modelo real o llamada a API externa)
-    const simulatedResult = 'Raza: Labrador Retriever'
-    const simulatedConfidence = 0.92
+    // Extraer metadata del base64
+    const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
+    if (!match) {
+      return res.status(400).json({ error: 'invalid_base64_format' })
+    }
 
-    // Log opcional para depurar
-    console.log('📸 Imagen recibida para análisis (base64, tamaño):', image_base64.length)
+    const contentType = match[1] // e.g. image/jpeg
+    const base64Data = match[2]
+    const buffer = Buffer.from(base64Data, 'base64')
+
+    // Nombre de archivo temporal (puede ser fijo si no se guarda)
+    const filename = `upload.${contentType.split('/')[1]}`
+
+    // Llamar al cliente de IA
+    const result = await identifyImageFromBuffer(buffer, filename, contentType)
 
     return res.json({
-      result: simulatedResult,
-      confidence: simulatedConfidence,
+      result: result.breed,
+      confidence: result.confidence,
     })
   } catch (err) {
+    if (err instanceof AiError) {
+      console.error('AI error:', err.message)
+      return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
+    }
+
     console.error('Analyze error:', err)
     return res.status(500).json({ error: 'analyze_failed' })
   }
