@@ -283,43 +283,64 @@ function startServer() {
 	})
 
 	app.post('/api/analyze-photo', async (req, res) => {
-		try {
-			const { image_base64 } = req.body as { image_base64?: string }
+  try {
+    console.log('📥 Petición recibida en /api/analyze-photo')
 
-			// Validación básica
-			if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
-				return res.status(400).json({ error: 'invalid_image_data' })
-			}
+    const { image_base64 } = req.body as { image_base64?: string }
+    console.log('📦 image_base64 recibido:', image_base64?.slice(0, 50) + '...')
 
-			// Extraer metadata del base64
-			const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
-			if (!match) {
-				return res.status(400).json({ error: 'invalid_base64_format' })
-			}
+    // Validación básica
+    if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
+      console.warn('⚠️ image_base64 inválido o ausente')
+      return res.status(400).json({ error: 'invalid_image_data' })
+    }
 
-			const contentType = match[1] // e.g. image/jpeg
-			const base64Data = match[2]
-			const buffer = Buffer.from(base64Data, 'base64')
+    // Extraer metadata del base64
+    const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
+    if (!match) {
+      console.warn('⚠️ Formato base64 inválido')
+      return res.status(400).json({ error: 'invalid_base64_format' })
+    }
 
-			// Nombre de archivo temporal (puede ser fijo si no se guarda)
-			const filename = `upload.${contentType.split('/')[1]}`
+    const contentType = match[1] // e.g. image/jpeg
+    const base64Data = match[2]
+    console.log('🧪 contentType extraído:', contentType)
 
-			const result = await identifyImageFromBuffer(buffer, filename, contentType)
+    const buffer = Buffer.from(base64Data, 'base64')
+    console.log('📦 Buffer generado. Tamaño:', buffer.length)
 
-			return res.json({
-				result: result.breed,
-				confidence: result.confidence,
-			})
-		} catch (err) {
-			if (err instanceof AiError) {
-				console.error('AI error:', err.message)
-				return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
-			}
+    // Validación de tamaño mínimo
+    if (buffer.length < 10000) {
+      console.warn('⚠️ Buffer demasiado pequeño para ser imagen válida')
+      return res.status(400).json({ error: 'image_too_small' })
+    }
 
-			console.error('Analyze error:', err)
-			return res.status(500).json({ error: 'analyze_failed' })
-		}
-	})
+    const filename = `upload.${contentType.split('/')[1]}`
+    console.log('📁 Nombre de archivo simulado:', filename)
+
+    console.log('🚀 Enviando imagen a IA...')
+    const result = await identifyImageFromBuffer(buffer, filename, contentType)
+    console.log('✅ Resultado IA recibido:', result)
+
+    return res.json({
+      result: result.breed,
+      confidence: result.confidence,
+    })
+  } catch (err) {
+    console.error('🔥 Error atrapado en /api/analyze-photo')
+
+    if (err instanceof AiError) {
+      console.error('🧠 AiError:', err.message, '| Código:', err.code)
+      return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
+    }
+
+    console.error('💥 Error inesperado:', err instanceof Error ? err.message : String(err))
+    return res.status(500).json({
+      error: 'analyze_failed',
+      message: err instanceof Error ? err.message : String(err)
+    })
+  }
+})
 
 	// API-prefixed endpoints for frontend compatibility
 	app.get('/api/categories', async (_req, res) => {
