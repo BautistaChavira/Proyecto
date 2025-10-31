@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import './App.css'
+import { API_URLS, fetchWithTimeout } from './config'
 
 type Props = {
   onClose: () => void
@@ -11,37 +12,97 @@ export default function Login({ onClose, onLogin }: Props) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  function submitLogin(e: React.FormEvent) {
-    e.preventDefault()
-    if (!username) {
-      setMessage('Introduce un nombre de usuario')
-      return
-    }
-    // Simulate successful login
-    onLogin({ name: username })
-    onClose()
+  async function sha256Hex(str: string): Promise<string> {
+    const enc = new TextEncoder()
+    const data = enc.encode(str)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   }
 
-  function submitRegister(e: React.FormEvent) {
+  async function submitLogin(e: React.FormEvent) {
     e.preventDefault()
+    setMessage(null)
+    if (!username || !password) {
+      setMessage('Introduce usuario y contraseña')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const clientHash = await sha256Hex(password)
+
+      const res = await fetchWithTimeout(API_URLS.login, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password_hash_client: clientHash }),
+      })
+
+      const user = (res as unknown) as { name: string }
+      if (!user || !user.name) throw new Error('Respuesta inválida del servidor')
+
+      onLogin(user)
+      onClose()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Error al iniciar sesión')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function submitRegister(e: React.FormEvent) {
+    e.preventDefault()
+    setMessage(null)
     if (!username || !password) {
       setMessage('Rellena usuario y contraseña')
       return
     }
-    // Simulate registration success -> auto login
-    onLogin({ name: username })
-    onClose()
+
+    setLoading(true)
+    try {
+      const clientHash = await sha256Hex(password)
+
+      const res = await fetchWithTimeout(API_URLS.register, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password_hash_client: clientHash }),
+      })
+
+      const user = (res as unknown) as { name: string }
+      if (!user || !user.name) throw new Error('Respuesta inválida del servidor')
+
+      onLogin(user)
+      onClose()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Error al registrar usuario')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function submitRecover(e: React.FormEvent) {
+  async function submitRecover(e: React.FormEvent) {
     e.preventDefault()
+    setMessage(null)
     if (!username) {
       setMessage('Introduce tu nombre de usuario o email')
       return
     }
-    // Simulate recovery
-    setMessage('Si existe la cuenta, se ha enviado un correo de recuperación (simulado).')
+
+    setLoading(true)
+    try {
+      await fetchWithTimeout(API_URLS.recover, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      })
+      setMessage('Si existe la cuenta, recibirás un email con instrucciones.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Error al procesar la recuperación')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -63,7 +124,9 @@ export default function Login({ onClose, onLogin }: Props) {
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </label>
             <div className="modal-actions">
-              <button type="submit" className="primary-button">Entrar</button>
+              <button type="submit" className="primary-button" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
+              </button>
               <button type="button" className="link-button" onClick={() => setMode('recover')}>¿Olvidaste la contraseña?</button>
             </div>
             <div style={{ marginTop: 8 }}>
@@ -81,7 +144,9 @@ export default function Login({ onClose, onLogin }: Props) {
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </label>
             <div className="modal-actions">
-              <button type="submit" className="primary-button">Crear cuenta</button>
+              <button type="submit" className="primary-button" disabled={loading}>
+                {loading ? 'Creando...' : 'Crear cuenta'}
+              </button>
               <button type="button" className="link-button" onClick={() => setMode('login')}>Volver a entrar</button>
             </div>
           </form>
@@ -93,7 +158,9 @@ export default function Login({ onClose, onLogin }: Props) {
               <input value={username} onChange={(e) => setUsername(e.target.value)} />
             </label>
             <div className="modal-actions">
-              <button type="submit" className="primary-button">Enviar</button>
+              <button type="submit" className="primary-button" disabled={loading}>
+                {loading ? 'Enviando...' : 'Enviar'}
+              </button>
               <button type="button" className="link-button" onClick={() => setMode('login')}>Volver</button>
             </div>
           </form>

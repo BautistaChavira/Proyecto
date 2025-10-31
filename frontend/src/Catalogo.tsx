@@ -7,10 +7,17 @@ type Category = {
   img: string
 }
 
+type BreedRow = {
+  id: number | string
+  name: string
+  scientific_name?: string
+  description?: string
+  default_image_url?: string
+  category_name?: string
+}
+
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'perros', title: 'Perros', img: 'https://via.placeholder.com/800x400?text=Perros' },
-  { id: 'gatos', title: 'Gatos', img: 'https://via.placeholder.com/800x400?text=Gatos' },
-  { id: 'aves', title: 'Aves', img: 'https://via.placeholder.com/800x400?text=Aves' },
+  { id: 'Cargando', title: 'A la espera de la base de datos', img: 'https://static.vecteezy.com/system/resources/thumbnails/009/261/207/original/loading-circle-icon-loading-gif-loading-screen-gif-loading-spinner-gif-loading-animation-loading-free-video.jpg' }
 ]
 
 const DEFAULT_BREEDS: Record<string, string[]> = {
@@ -19,45 +26,57 @@ const DEFAULT_BREEDS: Record<string, string[]> = {
   aves: ['Canario', 'Periquito', 'Cacatúa'],
 }
 
-function fetchWithTimeout(url: string, ms = 3000) {
-  return Promise.race([
-    fetch(url).then((r) => {
-      if (!r.ok) throw new Error('bad response')
-      return r.json()
-    }),
-    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
-  ])
-}
+import { API_URLS, fetchWithTimeout } from './config'
 
 export default function Catalogo() {
   const [selected, setSelected] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES)
   const [breeds, setBreeds] = useState<Record<string, string[]>>(DEFAULT_BREEDS)
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     let mounted = true
-    // Imaginary API endpoints
-    const categoriesUrl = 'http://localhost:4000/api/categories'
-    const breedsUrl = 'http://localhost:4000/api/breeds'
 
-    // Try fetch categories
-    fetchWithTimeout(categoriesUrl, 3000)
-      .then((data: any) => {
+    // Fetch categories (transform DB rows into Category[] expected by UI)
+    fetchWithTimeout<any[]>(API_URLS.categories)
+      .then((data) => {
         if (!mounted) return
-        if (Array.isArray(data)) setCategories(data)
+        // transform: use category name as id (slugified) and create a placeholder image
+        const transformed: Category[] = data.map((row) => ({
+          id: String(row.name).toLowerCase().replace(/\s+/g, '-'),
+          title: row.name,
+          img: `https://via.placeholder.com/800x400?text=${encodeURIComponent(row.name)}`,
+        }))
+        if (transformed.length > 0) setCategories(transformed)
+        setError(null) // Limpiar error si existe
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn('Error fetching categories:', error)
+        setError('No se pudieron cargar las categorías del servidor. Mostrando datos por defecto.')
         // keep defaults on error
       })
 
-    // Try fetch breeds mapping
-    fetchWithTimeout(breedsUrl, 3000)
-      .then((data: any) => {
+    // Fetch breeds list from backend and convert to mapping { categoryId: [breedNames] }
+    fetchWithTimeout<BreedRow[]>(API_URLS.breeds)
+      .then((rows) => {
         if (!mounted) return
-        if (data && typeof data === 'object') setBreeds(data)
+        const map: Record<string, string[]> = {}
+        for (const r of rows) {
+          const cat = (r.category_name || 'unknown').toString().toLowerCase().replace(/\s+/g, '-')
+          map[cat] = map[cat] || []
+          map[cat].push(r.name)
+        }
+        // merge with defaults to ensure keys exist for known categories
+        const merged = { ...DEFAULT_BREEDS, ...map }
+        setBreeds(merged)
       })
-      .catch(() => {
-        // keep defaults on error
+      .catch((error) => {
+        console.warn('Error fetching breeds:', error)
+        // Si ya hay un error de categorías, no sobreescribimos el mensaje
+        if (!error) {
+          setError('No se pudieron cargar las razas del servidor. Mostrando datos por defecto.')
+        }
       })
 
     return () => {
@@ -98,6 +117,18 @@ export default function Catalogo() {
     <main className="content">
       <section className="cards">
         <h2 style={{ width: '100%', margin: '0 0 1rem 0' }}>Catálogo</h2>
+        {error && (
+          <div style={{ 
+            padding: '1rem', 
+            marginBottom: '1rem', 
+            backgroundColor: '#fff3cd', 
+            color: '#856404', 
+            borderRadius: '4px',
+            width: '100%'
+          }}>
+            {error}
+          </div>
+        )}
         <div className="catalog-grid">
           {categories.map((c) => (
             <article key={c.id} className="catalog-card" onClick={() => setSelected(c.id)}>
@@ -113,4 +144,3 @@ export default function Catalogo() {
     </main>
   )
 }
-
