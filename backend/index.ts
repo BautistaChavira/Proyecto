@@ -304,11 +304,7 @@ function startServer() {
 			// Nombre de archivo temporal (puede ser fijo si no se guarda)
 			const filename = `upload.${contentType.split('/')[1]}`
 
-			// Reconstruir el string completo en formato Hugging Face
-			const fullBase64 = `data:${contentType};base64,${base64Data}`
-
-			// Llamar al cliente de IA con el string completo
-			const result = await identifyImageFromBuffer(Buffer.from(fullBase64), filename, contentType)
+			const result = await identifyImageFromBuffer(buffer, filename, contentType)
 
 			return res.json({
 				result: result.breed,
