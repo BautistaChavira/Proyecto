@@ -23,7 +23,7 @@ export async function identifyImageFromBuffer(
   const AI_API_KEY = process.env.AI_API_KEY
 
   // ✅ Log temporal para verificar variables en Render
-  console.log('🧪 Se usó la API key y URL:', {
+  console.log('Se usó la API key y URL:', {
     AI_API_URL,
     AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...' // solo muestra el inicio por seguridad
   })
