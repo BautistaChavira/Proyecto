@@ -284,57 +284,57 @@ function startServer() {
 
 	app.post('/api/analyze-photo', async (req, res) => {
   try {
-    console.log('📥 Petición recibida en /api/analyze-photo')
+    console.log('Petición recibida en /api/analyze-photo')
 
     const { image_base64 } = req.body as { image_base64?: string }
-    console.log('📦 image_base64 recibido:', image_base64?.slice(0, 50) + '...')
+    console.log('image_base64 recibido:', image_base64?.slice(0, 50) + '...')
 
     // Validación básica
     if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
-      console.warn('⚠️ image_base64 inválido o ausente')
+      console.warn('image_base64 inválido o ausente')
       return res.status(400).json({ error: 'invalid_image_data' })
     }
 
     // Extraer metadata del base64
     const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
     if (!match) {
-      console.warn('⚠️ Formato base64 inválido')
+      console.warn('Formato base64 inválido')
       return res.status(400).json({ error: 'invalid_base64_format' })
     }
 
     const contentType = match[1] // e.g. image/jpeg
     const base64Data = match[2]
-    console.log('🧪 contentType extraído:', contentType)
+    console.log('contentType extraído:', contentType)
 
     const buffer = Buffer.from(base64Data, 'base64')
-    console.log('📦 Buffer generado. Tamaño:', buffer.length)
+    console.log('Buffer generado. Tamaño:', buffer.length)
 
     // Validación de tamaño mínimo
     if (buffer.length < 10000) {
-      console.warn('⚠️ Buffer demasiado pequeño para ser imagen válida')
+      console.warn('Buffer demasiado pequeño para ser imagen válida')
       return res.status(400).json({ error: 'image_too_small' })
     }
 
     const filename = `upload.${contentType.split('/')[1]}`
-    console.log('📁 Nombre de archivo simulado:', filename)
+    console.log(' Nombre de archivo simulado:', filename)
 
-    console.log('🚀 Enviando imagen a IA...')
+    console.log('Enviando imagen a IA...')
     const result = await identifyImageFromBuffer(buffer, filename, contentType)
-    console.log('✅ Resultado IA recibido:', result)
+    console.log('Resultado IA recibido:', result)
 
     return res.json({
       result: result.breed,
       confidence: result.confidence,
     })
   } catch (err) {
-    console.error('🔥 Error atrapado en /api/analyze-photo')
+    console.error('Error atrapado en /api/analyze-photo')
 
     if (err instanceof AiError) {
-      console.error('🧠 AiError:', err.message, '| Código:', err.code)
+      console.error('AiError:', err.message, '| Código:', err.code)
       return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
     }
 
-    console.error('💥 Error inesperado:', err instanceof Error ? err.message : String(err))
+    console.error('Error inesperado:', err instanceof Error ? err.message : String(err))
     return res.status(500).json({
       error: 'analyze_failed',
       message: err instanceof Error ? err.message : String(err)
