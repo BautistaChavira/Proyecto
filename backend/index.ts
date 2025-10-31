@@ -111,6 +111,7 @@ function startServer() {
 	// Middleware para parsear JSON y aumentar el límite si es necesario
 	app.use(express.json({ limit: '10mb' }));
 
+	//Para lo de la IA
 	app.post('/api/identify', upload.single('image'), async (req, res) => {
 		try {
 			const file = req.file;
@@ -176,6 +177,59 @@ function startServer() {
 			res.status(500).json({ error: 'failed_to_list_tables' });
 		}
 	});
+
+	app.post('/api/login', async (req, res) => {
+		try {
+			const { username, password_hash_client } = req.body as { username?: string; password_hash_client?: string }
+
+			// Validaciones iniciales
+			if (!username || !password_hash_client) {
+				return res.status(400).json({ error: 'missing_username_or_password' })
+			}
+			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+				return res.status(400).json({ error: 'invalid_username' })
+			}
+			if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+				return res.status(400).json({ error: 'invalid_password_hash' })
+			}
+
+			// Normalizar email/username
+			const email = username.trim().toLowerCase()
+
+			// Buscar usuario en la base de datos
+			const result = (await pool.query(
+				'SELECT id, email, password_hash, name FROM users WHERE email = $1 LIMIT 1',
+				[email]
+			)) as QueryResult | null
+
+			// Comprobación defensiva
+			if (!result || typeof result.rowCount !== 'number') {
+				console.warn('Unexpected query result for login check', result)
+				return res.status(500).json({ error: 'login_query_failed' })
+			}
+			if (result.rowCount === 0) {
+				return res.status(401).json({ error: 'invalid_credentials' })
+			}
+
+			const user = result.rows[0]
+			const storedHash = user.password_hash
+
+			// Recombinar el hash cliente con el pepper y comparar con bcrypt
+			const pepper = process.env.PEPPER_SECRET || ''
+			const combined = password_hash_client + pepper
+			const match = await bcrypt.compare(combined, storedHash)
+
+			if (!match) {
+				return res.status(401).json({ error: 'invalid_credentials' })
+			}
+
+			// Autenticación exitosa
+			return res.json({ name: user.email })
+		} catch (err) {
+			console.error('Login error:', err)
+			return res.status(500).json({ error: 'login_failed' })
+		}
+	})
 
 	app.post('/api/register', async (req, res) => {
 		try {
