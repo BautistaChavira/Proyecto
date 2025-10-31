@@ -22,6 +22,12 @@ export async function identifyImageFromBuffer(
   const AI_API_URL = process.env.AI_API_URL
   const AI_API_KEY = process.env.AI_API_KEY
 
+  // ✅ Log temporal para verificar variables en Render
+  console.log('🧪 Se usó la API key y URL:', {
+    AI_API_URL,
+    AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...' // solo muestra el inicio por seguridad
+  })
+
   if (!AI_API_URL) throw new AiError('AI_API_URL missing', 'config')
 
   const base64 = buffer.toString('base64')
