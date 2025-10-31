@@ -2,7 +2,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://proyecto-backend-jsv7.onrender.com/api';
 
 export const API_URLS = {
-  // Catalog endpoints
+  // Catalogo endpoints
   categories: `${API_BASE_URL}/categories`,
   breeds: `${API_BASE_URL}/breeds`,
   
@@ -17,6 +17,9 @@ export const API_URLS = {
   // MisMascotas endpoints
   pets: `${API_BASE_URL}/pets`,
   
+  //AnalizadorIA endpoint
+  analyzePhoto: `${API_BASE_URL}/analyze-photo`,
+
   // Curiosidades endpoint
   curiosidades: `${API_BASE_URL}/curiosidades`,
 } as const;

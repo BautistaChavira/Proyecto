@@ -22,35 +22,39 @@ export default function Login({ onClose, onLogin }: Props) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   }
 
-  async function submitLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setMessage(null)
-    if (!username || !password) {
-      setMessage('Introduce usuario y contraseña')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const clientHash = await sha256Hex(password)
-
-      const res = await fetchWithTimeout(API_URLS.login, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password_hash_client: clientHash }),
-      })
-
-      const user = (res as unknown) as { name: string }
-      if (!user || !user.name) throw new Error('Respuesta inválida del servidor')
-
-      onLogin(user)
-      onClose()
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error al iniciar sesión')
-    } finally {
-      setLoading(false)
-    }
+async function submitLogin(e: React.FormEvent) {
+  e.preventDefault()
+  setMessage(null)
+  if (!username || !password) {
+    setMessage('Introduce usuario y contraseña')
+    return
   }
+
+  setLoading(true)
+  try {
+    const clientHash = await sha256Hex(password)
+
+    const res = await fetchWithTimeout(API_URLS.login, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password_hash_client: clientHash }),
+    })
+
+    const user = res as { name: string }
+    if (!user || !user.name) throw new Error('Respuesta inválida del servidor')
+
+    onLogin(user)
+    onClose()
+  } catch (error: any) {
+    if (error instanceof Error && error.message.includes('401')) {
+      setMessage('Credenciales inválidas')
+    } else {
+      setMessage(error instanceof Error ? error.message : 'Error al iniciar sesión')
+    }
+  } finally {
+    setLoading(false)
+  }
+}
 
   async function submitRegister(e: React.FormEvent) {
     e.preventDefault()

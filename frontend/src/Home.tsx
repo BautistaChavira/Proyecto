@@ -1,33 +1,38 @@
 import './App.css'
 
-export default function Home() {
+type Props = {
+  onNavigate: (page: 'catalogo' | 'curiosidades' | 'mis-mascotas') => void
+}
+
+export default function Home({ onNavigate }: Props) {
   return (
     <main className="content">
-      {/* Sección principal: tarjetas rectangulares apiladas */}
       <section className="cards">
         <article className="card-large">
           <div className="card-inner">
-            <img className="card-image" src="https://via.placeholder.com/320x200?text=Destacado" alt="Destacado" />
+            <img className="card-image" src="https://tse2.mm.bing.net/th/id/OIP._TaIGWEpnTUKbakVwDJMMwHaEK?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Destacado" />
             <div className="card-text">
-              <h2>Destacado</h2>
-              <p>Contenido destacado o anuncio importante. Este recuadro ocupa casi todo el ancho disponible y está diseñado para llamar la atención.</p>
+              <h2>Tour Rápido</h2>
+              <p>Esta página sirve para facilitar el cuidado de las mascotas. Con el uso de inteligencia artifical y podemos identificar la 
+                raza de tu mascota y ayudarte a cuidarla dándote la información que necesitas.<br/>
+                Haz click aquí para saber más sobre las funcionalidades de esta página web</p>
             </div>
           </div>
         </article>
 
-        <article className="card-large">
+        <article className="card-large" onClick={() => onNavigate('catalogo')} style={{ cursor: 'pointer' }}>
           <div className="card-inner">
-            <img className="card-image" src="https://via.placeholder.com/320x200?text=Cat%C3%A1logo" alt="Catálogo recomendado" />
+            <img className="card-image" src="https://tse4.mm.bing.net/th/id/OIP.2UKTmm4Lzd-gk9mi6KzyKAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Catálogo recomendado" />
             <div className="card-text">
               <h2>Catálogo recomendado</h2>
-              <p>Una breve descripción del catálogo o categoría. En pantallas grandes las tarjetas mantendrán un ancho máximo para mejor lectura.</p>
+              <p>Muestra de las todos los tipos y razas de mascotas que tenemos registrados con datos varios y consejos para su cuidado.</p>
             </div>
           </div>
         </article>
 
-        <article className="card-large">
+        <article className="card-large" onClick={() => onNavigate('curiosidades')} style={{ cursor: 'pointer' }}>
           <div className="card-inner">
-            <img className="card-image" src="https://via.placeholder.com/320x200?text=Curiosidades" alt="Curiosidades" />
+            <img className="card-image" src="https://img.freepik.com/fotos-premium/gato-tratando-colarse-pegatinas-signo-interrogacion_96270-405.jpg" alt="Curiosidades" />
             <div className="card-text">
               <h2>Curiosidades</h2>
               <p>Dato curioso del día sobre mascotas. Estos recuadros se apilan en columna y son fácilmente desplazables.</p>
@@ -35,9 +40,9 @@ export default function Home() {
           </div>
         </article>
 
-        <article className="card-large">
+        <article className="card-large" onClick={() => onNavigate('mis-mascotas')} style={{ cursor: 'pointer' }}>
           <div className="card-inner">
-            <img className="card-image" src="https://via.placeholder.com/320x200?text=Mis+Mascotas" alt="Mis Mascotas" />
+            <img className="card-image" src="https://tse1.mm.bing.net/th/id/OIP.UA9dXRB-wqqH_w61gjvl8gHaHa?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Mis Mascotas" />
             <div className="card-text">
               <h2>Mis Mascotas</h2>
               <p>Acceso rápido a tus mascotas guardadas y su información. Agrega, edita o elimina registros desde aquí.</p>

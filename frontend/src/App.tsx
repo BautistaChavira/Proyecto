@@ -7,10 +7,12 @@ import MisMascotas from './MisMascotas'
 import ConsultaFoto from './ConsultaFoto'
 import Login from './Login'
 
+
 function App() {
   const [user, setUser] = useState<{ name: string } | null>(null)
   const [page, setPage] = useState<'home' | 'catalogo' | 'curiosidades' | 'mis-mascotas' | 'consulta-foto'>('home')
   const [showLogin, setShowLogin] = useState(false)
+
   return (
     <>
       <nav className="navbar">
@@ -20,6 +22,7 @@ function App() {
           <button className="nav-link" onClick={() => setPage('curiosidades')}>Curiosidades</button>
           <button className="nav-link" onClick={() => setPage('mis-mascotas')}>Mis Mascotas</button>
           <button className="nav-link" onClick={() => setPage('consulta-foto')}>Consulta por Foto</button>
+
         </div>
         <div className="nav-section">
           {/* Login: open modal */}
@@ -45,10 +48,10 @@ function App() {
           onLogin={(u) => setUser(u)}
         />
       )}
-      {page === 'home' && <Home />}
+      {page === 'home' && <Home onNavigate={(target) => setPage(target)} />}
       {page === 'catalogo' && <Catalogo />}
       {page === 'curiosidades' && <Curiosidades />}
-  {page === 'mis-mascotas' && <MisMascotas onGoToConsulta={() => setPage('consulta-foto')} />}
+      {page === 'mis-mascotas' && <MisMascotas onGoToConsulta={() => setPage('consulta-foto')} />}
       {page === 'consulta-foto' && <ConsultaFoto />}
     </>
   )
