@@ -6,6 +6,8 @@ import initDb from './init-db';
 import multer from 'multer';
 import bcrypt from 'bcrypt';
 
+import nodemailer from 'nodemailer'
+
 import type { QueryResult } from 'pg'
 import { identifyImageFromBuffer, AiError } from './ai/aiClient'
 
@@ -178,56 +180,67 @@ function startServer() {
 	});
 
 	app.post('/api/login', async (req, res) => {
-		try {
-			const { username, password_hash_client } = req.body as {
-				username?: string
-				password_hash_client?: string
-			}
+  try {
+    const { username, password_hash_client } = req.body as {
+      username?: string
+      password_hash_client?: string
+    }
 
-			// Validaciones iniciales
-			if (!username || !password_hash_client) {
-				return res.status(400).json({ error: 'missing_username_or_password' })
-			}
+    console.log('[LOGIN] Datos recibidos:', { username, password_hash_client })
 
-			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
-				return res.status(400).json({ error: 'invalid_username' })
-			}
+    // Validaciones iniciales
+    if (!username || !password_hash_client) {
+      console.warn('[LOGIN] Faltan campos obligatorios')
+      return res.status(400).json({ error: 'missing_fields' })
+    }
 
-			if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-				return res.status(400).json({ error: 'invalid_password_hash' })
-			}
+    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+      console.warn('[LOGIN] Username inválido:', username)
+      return res.status(400).json({ error: 'invalid_username' })
+    }
 
-			const normalizedName = username.trim().toLowerCase()
+    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+      console.warn('[LOGIN] Hash inválido:', password_hash_client)
+      return res.status(400).json({ error: 'invalid_password_hash' })
+    }
 
-			// Buscar usuario por nombre
-			const result = await pool.query(
-				'SELECT id, name, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
-				[normalizedName]
-			)
+    const normalizedName = username.trim().toLowerCase()
+    console.log('[LOGIN] Nombre normalizado:', normalizedName)
 
-			if (result.rowCount === 0) {
-				return res.status(401).json({ error: 'invalid_credentials' })
-			}
+    // Buscar usuario por nombre
+    const result = await pool.query(
+      'SELECT id, name, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
+      [normalizedName]
+    )
 
-			const user = result.rows[0]
-			const storedHash = user.password_hash
+    console.log('[LOGIN] Resultado de búsqueda de usuario:', result.rowCount)
 
-			// Comparar hash cliente + pepper con bcrypt
-			const pepper = process.env.PEPPER_SECRET || ''
-			const combined = password_hash_client + pepper
-			const match = await bcrypt.compare(combined, storedHash)
+    if (result.rowCount === 0) {
+      console.warn('[LOGIN] Usuario no encontrado:', normalizedName)
+      return res.status(401).json({ error: 'invalid_credentials' })
+    }
 
-			if (!match) {
-				return res.status(401).json({ error: 'invalid_credentials' })
-			}
+    const user = result.rows[0]
+    const storedHash = user.password_hash
 
-			// Autenticación exitosa
-			return res.json({ name: user.name })
-		} catch (err) {
-			console.error('Login error:', err)
-			return res.status(500).json({ error: 'login_failed' })
-		}
-	})
+    const pepper = process.env.PEPPER_SECRET || ''
+    const combined = password_hash_client + pepper
+
+    console.log('[LOGIN] Comparando hash con bcrypt...')
+    const match = await bcrypt.compare(combined, storedHash)
+
+    if (!match) {
+      console.warn('[LOGIN] Contraseña incorrecta para usuario:', normalizedName)
+      return res.status(401).json({ error: 'invalid_credentials' })
+    }
+
+    console.log('[LOGIN] Autenticación exitosa para:', user.name)
+    return res.json({ name: user.name })
+  } catch (err) {
+    console.error('[LOGIN] Error inesperado:', err)
+    return res.status(500).json({ error: 'login_failed' })
+  }
+})
 
 	app.post('/api/register', async (req, res) => {
   try {
@@ -305,37 +318,55 @@ function startServer() {
 
 	//endpoints de recuperar contraseña
 
-	app.post('/api/recover/request', async (req, res) => {
-		try {
-			const { email } = req.body as { email?: string }
 
-			if (!email || typeof email !== 'string') {
-				return res.status(400).json({ error: 'invalid_email' })
-			}
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+})
 
-			const normalized = email.trim().toLowerCase()
-			const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
+app.post('/api/recover/request', async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string }
 
-			if (result.rowCount === 0) {
-				return res.status(404).json({ error: 'user_not_found' })
-			}
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'invalid_email' })
+    }
 
-			// Generar código temporal (puedes usar UUID, OTP, etc.)
-			const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const normalized = email.trim().toLowerCase()
+    const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
 
-			// Guardar código en tabla temporal o en campo de usuario (aquí lo guardamos en users)
-			await pool.query(
-				'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
-				[code, normalized]
-			)
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'user_not_found' })
+    }
 
-			// Aquí podrías enviar el código por correo (lo haces desde el frontend)
-			return res.json({ status: 'code_generated' })
-		} catch (err) {
-			console.error('Recover request error:', err)
-			return res.status(500).json({ error: 'recover_request_failed' })
-		}
-	})
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+
+    await pool.query(
+      'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
+      [code, normalized]
+    )
+
+    // Enviar correo
+    await transporter.sendMail({
+      from: '"Mascotas App" <no-reply@mascotas.com>',
+      to: normalized,
+      subject: 'Código de recuperación de contraseña',
+      text: `Tu código de recuperación es: ${code}. Este código expirará en 15 minutos.`,
+      html: `<p>Tu código de recuperación es: <strong>${code}</strong></p><p>Este código expirará en 15 minutos.</p>`,
+    })
+
+    console.log('[RECOVER] Código enviado por correo a:', normalized)
+    return res.json({ status: 'code_generated' })
+  } catch (err) {
+    console.error('[RECOVER] Error en /request:', err)
+    return res.status(500).json({ error: 'recover_request_failed' })
+  }
+})
 
 	app.post('/api/recover/verify', async (req, res) => {
 		try {
