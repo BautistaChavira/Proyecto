@@ -133,7 +133,6 @@ function startServer() {
 		}
 	});
 
-
 	// Detailed request logger for debugging
 	app.use((req, res, next) => {
 		const startTime = Date.now();
@@ -179,72 +178,15 @@ function startServer() {
 	});
 
 	app.post('/api/login', async (req, res) => {
-  try {
-    const { username, password_hash_client } = req.body as {
-      username?: string
-      password_hash_client?: string
-    }
-
-    // Validaciones iniciales
-    if (!username || !password_hash_client) {
-      return res.status(400).json({ error: 'missing_username_or_password' })
-    }
-
-    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
-      return res.status(400).json({ error: 'invalid_username' })
-    }
-
-    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-      return res.status(400).json({ error: 'invalid_password_hash' })
-    }
-
-    const normalizedName = username.trim().toLowerCase()
-
-    // Buscar usuario por nombre
-    const result = await pool.query(
-      'SELECT id, name, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
-      [normalizedName]
-    )
-
-    if (result.rowCount === 0) {
-      return res.status(401).json({ error: 'invalid_credentials' })
-    }
-
-    const user = result.rows[0]
-    const storedHash = user.password_hash
-
-    // Comparar hash cliente + pepper con bcrypt
-    const pepper = process.env.PEPPER_SECRET || ''
-    const combined = password_hash_client + pepper
-    const match = await bcrypt.compare(combined, storedHash)
-
-    if (!match) {
-      return res.status(401).json({ error: 'invalid_credentials' })
-    }
-
-    // Autenticación exitosa
-    return res.json({ name: user.name })
-  } catch (err) {
-    console.error('Login error:', err)
-    return res.status(500).json({ error: 'login_failed' })
-  }
-})
-
-	app.post('/api/register', async (req, res) => {
 		try {
-			const { email, username, password_hash_client } = req.body as {
-				email?: string
+			const { username, password_hash_client } = req.body as {
 				username?: string
 				password_hash_client?: string
 			}
 
 			// Validaciones iniciales
-			if (!email || !username || !password_hash_client) {
-				return res.status(400).json({ error: 'missing_fields' })
-			}
-
-			if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-				return res.status(400).json({ error: 'invalid_email' })
+			if (!username || !password_hash_client) {
+				return res.status(400).json({ error: 'missing_username_or_password' })
 			}
 
 			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
@@ -255,41 +197,111 @@ function startServer() {
 				return res.status(400).json({ error: 'invalid_password_hash' })
 			}
 
-			const normalizedEmail = email.trim().toLowerCase()
-			const normalizedName = username.trim()
+			const normalizedName = username.trim().toLowerCase()
 
-			// Verificar si el correo ya existe
+			// Buscar usuario por nombre
 			const result = await pool.query(
-				'SELECT id FROM users WHERE email = $1 LIMIT 1',
-				[normalizedEmail]
+				'SELECT id, name, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
+				[normalizedName]
 			)
 
 			if (result.rowCount === 0) {
-				// Re-hashear con pepper + bcrypt
-				const pepper = process.env.PEPPER_SECRET || ''
-				const combined = password_hash_client + pepper
-				const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
-				const serverHash = await bcrypt.hash(combined, saltRounds)
-
-				// Insertar nuevo usuario
-				const insert = await pool.query(
-					`INSERT INTO users (email, password_hash, name, created_at)
-         VALUES ($1, $2, $3, NOW())
-         RETURNING id, email, name`,
-					[normalizedEmail, serverHash, normalizedName]
-				)
-
-				const newUser = insert.rows[0]
-				return res.status(201).json({ name: newUser.name })
+				return res.status(401).json({ error: 'invalid_credentials' })
 			}
 
-			// Usuario ya existe
-			return res.status(409).json({ error: 'user_already_exists' })
+			const user = result.rows[0]
+			const storedHash = user.password_hash
+
+			// Comparar hash cliente + pepper con bcrypt
+			const pepper = process.env.PEPPER_SECRET || ''
+			const combined = password_hash_client + pepper
+			const match = await bcrypt.compare(combined, storedHash)
+
+			if (!match) {
+				return res.status(401).json({ error: 'invalid_credentials' })
+			}
+
+			// Autenticación exitosa
+			return res.json({ name: user.name })
 		} catch (err) {
-			console.error('Register error:', err)
-			return res.status(500).json({ error: 'register_failed' })
+			console.error('Login error:', err)
+			return res.status(500).json({ error: 'login_failed' })
 		}
 	})
+
+	app.post('/api/register', async (req, res) => {
+  try {
+    const { email, username, password_hash_client } = req.body as {
+      email?: string
+      username?: string
+      password_hash_client?: string
+    }
+
+    console.log('[REGISTER] Datos recibidos:', { email, username, password_hash_client })
+
+    // Validaciones iniciales
+    if (!email || !username || !password_hash_client) {
+      console.warn('[REGISTER] Faltan campos obligatorios')
+      return res.status(400).json({ error: 'missing_fields' })
+    }
+
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      console.warn('[REGISTER] Email inválido:', email)
+      return res.status(400).json({ error: 'invalid_email' })
+    }
+
+    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+      console.warn('[REGISTER] Username inválido:', username)
+      return res.status(400).json({ error: 'invalid_username' })
+    }
+
+    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+      console.warn('[REGISTER] Hash inválido:', password_hash_client)
+      return res.status(400).json({ error: 'invalid_password_hash' })
+    }
+
+    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedName = username.trim()
+
+    console.log('[REGISTER] Email normalizado:', normalizedEmail)
+    console.log('[REGISTER] Nombre normalizado:', normalizedName)
+
+    // Verificar si el correo ya existe
+    const result = await pool.query(
+      'SELECT id FROM users WHERE email = $1 LIMIT 1',
+      [normalizedEmail]
+    )
+
+    console.log('[REGISTER] Resultado de búsqueda de email:', result.rowCount)
+
+    if (result.rowCount === 0) {
+      const pepper = process.env.PEPPER_SECRET || ''
+      const combined = password_hash_client + pepper
+      const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
+
+      console.log('[REGISTER] Generando hash con bcrypt...')
+      const serverHash = await bcrypt.hash(combined, saltRounds)
+      console.log('[REGISTER] Hash generado')
+
+      // Insertar nuevo usuario
+      const insert = await pool.query(
+        `INSERT INTO users (email, password_hash, name, created_at)
+         VALUES ($1, $2, $3, NOW())
+         RETURNING id, email, name`,
+        [normalizedEmail, serverHash, normalizedName]
+      )
+
+      console.log('[REGISTER] Usuario insertado:', insert.rows[0])
+      return res.status(201).json({ name: insert.rows[0].name })
+    }
+
+    console.warn('[REGISTER] Usuario ya existe:', normalizedEmail)
+    return res.status(409).json({ error: 'user_already_exists' })
+  } catch (err) {
+    console.error('[REGISTER] Error inesperado:', err)
+    return res.status(500).json({ error: 'register_failed' })
+  }
+})
 
 	//endpoints de recuperar contraseña
 
