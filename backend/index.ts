@@ -235,55 +235,65 @@ function startServer() {
 })
 
 	app.post('/api/register', async (req, res) => {
-		try {
-			const { username, password_hash_client } = req.body as { username?: string; password_hash_client?: string }
+  try {
+    const { email, username, password_hash_client } = req.body as {
+      email?: string
+      username?: string
+      password_hash_client?: string
+    }
 
-			// Validaciones iniciales
-			if (!username || !password_hash_client) {
-				return res.status(400).json({ error: 'missing_username_or_password' })
-			}
-			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
-				return res.status(400).json({ error: 'invalid_username' })
-			}
-			if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-				return res.status(400).json({ error: 'invalid_password_hash' })
-			}
+    // Validaciones iniciales
+    if (!email || !username || !password_hash_client) {
+      return res.status(400).json({ error: 'missing_fields' })
+    }
 
-			// Normalizar email/username
-			const email = username.trim().toLowerCase()
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'invalid_email' })
+    }
 
-			// Ejecutar consulta A CONTINUACIÓN (ya tenemos email)
-			const existing = (await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email])) as QueryResult | null
+    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+      return res.status(400).json({ error: 'invalid_username' })
+    }
 
-			// Comprobación defensiva
-			if (!existing || typeof existing.rowCount !== 'number') {
-				console.warn('Unexpected query result for existing user check', existing)
-				// seguimos adelante como si no existiera; podrías preferir devolver 500 aquí
-			} else if (existing.rowCount > 0) {
-				return res.status(409).json({ error: 'user_already_exists' })
-			}
+    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+      return res.status(400).json({ error: 'invalid_password_hash' })
+    }
 
-			// Re-hashear en servidor con pepper + bcrypt
-			const pepper = process.env.PEPPER_SECRET || ''
-			const combined = password_hash_client + pepper
-			const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
-			const serverHash = await bcrypt.hash(combined, saltRounds)
+    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedName = username.trim()
 
-			// Insertar nuevo usuario
-			const insert = (await pool.query(
-				`INSERT INTO users (email, password_hash, name, created_at)
-       VALUES ($1, $2, $3, NOW())
-       RETURNING id, email, name`,
-				[email, serverHash, null]
-			)) as QueryResult
+    // Verificar si el correo ya existe
+    const result = await pool.query(
+      'SELECT id FROM users WHERE email = $1 LIMIT 1',
+      [normalizedEmail]
+    )
 
-			const newUser = insert.rows[0]
-			return res.status(201).json({ name: newUser.email })
-		} catch (err) {
-			console.error('Register error:', err)
-			return res.status(500).json({ error: 'register_failed' })
-		}
-	})
+    if (result.rowCount === 0) {
+      // Re-hashear con pepper + bcrypt
+      const pepper = process.env.PEPPER_SECRET || ''
+      const combined = password_hash_client + pepper
+      const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
+      const serverHash = await bcrypt.hash(combined, saltRounds)
+
+      // Insertar nuevo usuario
+      const insert = await pool.query(
+        `INSERT INTO users (email, password_hash, name, created_at)
+         VALUES ($1, $2, $3, NOW())
+         RETURNING id, email, name`,
+        [normalizedEmail, serverHash, normalizedName]
+      )
+
+      const newUser = insert.rows[0]
+      return res.status(201).json({ name: newUser.name })
+    }
+
+    // Usuario ya existe
+    return res.status(409).json({ error: 'user_already_exists' })
+  } catch (err) {
+    console.error('Register error:', err)
+    return res.status(500).json({ error: 'register_failed' })
+  }
+})
 
 	//endpoints de recuperar contraseña
 
