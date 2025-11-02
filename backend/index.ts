@@ -189,27 +189,23 @@ function startServer() {
     if (!username || !password_hash_client) {
       return res.status(400).json({ error: 'missing_username_or_password' })
     }
+
     if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
       return res.status(400).json({ error: 'invalid_username' })
     }
+
     if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
       return res.status(400).json({ error: 'invalid_password_hash' })
     }
 
-    // Normalizar nombre de usuario
     const normalizedName = username.trim().toLowerCase()
 
     // Buscar usuario por nombre
     const result = await pool.query(
-      'SELECT id, name, email, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
+      'SELECT id, name, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
       [normalizedName]
     )
 
-    // Comprobación defensiva
-    if (!result || typeof result.rowCount !== 'number') {
-      console.warn('Unexpected query result for login check', result)
-      return res.status(500).json({ error: 'login_query_failed' })
-    }
     if (result.rowCount === 0) {
       return res.status(401).json({ error: 'invalid_credentials' })
     }
@@ -217,7 +213,7 @@ function startServer() {
     const user = result.rows[0]
     const storedHash = user.password_hash
 
-    // Recombinar el hash cliente con el pepper y comparar con bcrypt
+    // Comparar hash cliente + pepper con bcrypt
     const pepper = process.env.PEPPER_SECRET || ''
     const combined = password_hash_client + pepper
     const match = await bcrypt.compare(combined, storedHash)
@@ -235,254 +231,254 @@ function startServer() {
 })
 
 	app.post('/api/register', async (req, res) => {
-  try {
-    const { email, username, password_hash_client } = req.body as {
-      email?: string
-      username?: string
-      password_hash_client?: string
-    }
+		try {
+			const { email, username, password_hash_client } = req.body as {
+				email?: string
+				username?: string
+				password_hash_client?: string
+			}
 
-    // Validaciones iniciales
-    if (!email || !username || !password_hash_client) {
-      return res.status(400).json({ error: 'missing_fields' })
-    }
+			// Validaciones iniciales
+			if (!email || !username || !password_hash_client) {
+				return res.status(400).json({ error: 'missing_fields' })
+			}
 
-    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ error: 'invalid_email' })
-    }
+			if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+				return res.status(400).json({ error: 'invalid_email' })
+			}
 
-    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
-      return res.status(400).json({ error: 'invalid_username' })
-    }
+			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+				return res.status(400).json({ error: 'invalid_username' })
+			}
 
-    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-      return res.status(400).json({ error: 'invalid_password_hash' })
-    }
+			if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+				return res.status(400).json({ error: 'invalid_password_hash' })
+			}
 
-    const normalizedEmail = email.trim().toLowerCase()
-    const normalizedName = username.trim()
+			const normalizedEmail = email.trim().toLowerCase()
+			const normalizedName = username.trim()
 
-    // Verificar si el correo ya existe
-    const result = await pool.query(
-      'SELECT id FROM users WHERE email = $1 LIMIT 1',
-      [normalizedEmail]
-    )
+			// Verificar si el correo ya existe
+			const result = await pool.query(
+				'SELECT id FROM users WHERE email = $1 LIMIT 1',
+				[normalizedEmail]
+			)
 
-    if (result.rowCount === 0) {
-      // Re-hashear con pepper + bcrypt
-      const pepper = process.env.PEPPER_SECRET || ''
-      const combined = password_hash_client + pepper
-      const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
-      const serverHash = await bcrypt.hash(combined, saltRounds)
+			if (result.rowCount === 0) {
+				// Re-hashear con pepper + bcrypt
+				const pepper = process.env.PEPPER_SECRET || ''
+				const combined = password_hash_client + pepper
+				const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
+				const serverHash = await bcrypt.hash(combined, saltRounds)
 
-      // Insertar nuevo usuario
-      const insert = await pool.query(
-        `INSERT INTO users (email, password_hash, name, created_at)
+				// Insertar nuevo usuario
+				const insert = await pool.query(
+					`INSERT INTO users (email, password_hash, name, created_at)
          VALUES ($1, $2, $3, NOW())
          RETURNING id, email, name`,
-        [normalizedEmail, serverHash, normalizedName]
-      )
+					[normalizedEmail, serverHash, normalizedName]
+				)
 
-      const newUser = insert.rows[0]
-      return res.status(201).json({ name: newUser.name })
-    }
+				const newUser = insert.rows[0]
+				return res.status(201).json({ name: newUser.name })
+			}
 
-    // Usuario ya existe
-    return res.status(409).json({ error: 'user_already_exists' })
-  } catch (err) {
-    console.error('Register error:', err)
-    return res.status(500).json({ error: 'register_failed' })
-  }
-})
+			// Usuario ya existe
+			return res.status(409).json({ error: 'user_already_exists' })
+		} catch (err) {
+			console.error('Register error:', err)
+			return res.status(500).json({ error: 'register_failed' })
+		}
+	})
 
 	//endpoints de recuperar contraseña
 
 	app.post('/api/recover/request', async (req, res) => {
-  try {
-    const { email } = req.body as { email?: string }
+		try {
+			const { email } = req.body as { email?: string }
 
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'invalid_email' })
-    }
+			if (!email || typeof email !== 'string') {
+				return res.status(400).json({ error: 'invalid_email' })
+			}
 
-    const normalized = email.trim().toLowerCase()
-    const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
+			const normalized = email.trim().toLowerCase()
+			const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'user_not_found' })
-    }
+			if (result.rowCount === 0) {
+				return res.status(404).json({ error: 'user_not_found' })
+			}
 
-    // Generar código temporal (puedes usar UUID, OTP, etc.)
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
+			// Generar código temporal (puedes usar UUID, OTP, etc.)
+			const code = Math.floor(100000 + Math.random() * 900000).toString()
 
-    // Guardar código en tabla temporal o en campo de usuario (aquí lo guardamos en users)
-    await pool.query(
-      'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
-      [code, normalized]
-    )
+			// Guardar código en tabla temporal o en campo de usuario (aquí lo guardamos en users)
+			await pool.query(
+				'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
+				[code, normalized]
+			)
 
-    // Aquí podrías enviar el código por correo (lo haces desde el frontend)
-    return res.json({ status: 'code_generated' })
-  } catch (err) {
-    console.error('Recover request error:', err)
-    return res.status(500).json({ error: 'recover_request_failed' })
-  }
-})
+			// Aquí podrías enviar el código por correo (lo haces desde el frontend)
+			return res.json({ status: 'code_generated' })
+		} catch (err) {
+			console.error('Recover request error:', err)
+			return res.status(500).json({ error: 'recover_request_failed' })
+		}
+	})
 
-app.post('/api/recover/verify', async (req, res) => {
-  try {
-    const { email, code } = req.body as { email?: string; code?: string }
+	app.post('/api/recover/verify', async (req, res) => {
+		try {
+			const { email, code } = req.body as { email?: string; code?: string }
 
-    if (!email || !code) {
-      return res.status(400).json({ error: 'missing_email_or_code' })
-    }
+			if (!email || !code) {
+				return res.status(400).json({ error: 'missing_email_or_code' })
+			}
 
-    const normalized = email.trim().toLowerCase()
-    const result = await pool.query(
-      `SELECT recovery_code, recovery_code_created_at
+			const normalized = email.trim().toLowerCase()
+			const result = await pool.query(
+				`SELECT recovery_code, recovery_code_created_at
        FROM users WHERE email = $1 LIMIT 1`,
-      [normalized]
-    )
+				[normalized]
+			)
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'user_not_found' })
-    }
+			if (result.rowCount === 0) {
+				return res.status(404).json({ error: 'user_not_found' })
+			}
 
-    const user = result.rows[0]
-    const codeValid = user.recovery_code === code
-    const expired = Date.now() - new Date(user.recovery_code_created_at).getTime() > 15 * 60 * 1000
+			const user = result.rows[0]
+			const codeValid = user.recovery_code === code
+			const expired = Date.now() - new Date(user.recovery_code_created_at).getTime() > 15 * 60 * 1000
 
-    if (!codeValid) {
-      return res.status(401).json({ error: 'invalid_code' })
-    }
+			if (!codeValid) {
+				return res.status(401).json({ error: 'invalid_code' })
+			}
 
-    if (expired) {
-      return res.status(410).json({ error: 'code_expired' })
-    }
+			if (expired) {
+				return res.status(410).json({ error: 'code_expired' })
+			}
 
-    return res.json({ status: 'code_valid' })
-  } catch (err) {
-    console.error('Recover verify error:', err)
-    return res.status(500).json({ error: 'recover_verify_failed' })
-  }
-})
+			return res.json({ status: 'code_valid' })
+		} catch (err) {
+			console.error('Recover verify error:', err)
+			return res.status(500).json({ error: 'recover_verify_failed' })
+		}
+	})
 
-app.post('/api/recover/reset', async (req, res) => {
-  try {
-    const { email, code, password_hash_client } = req.body as {
-      email?: string
-      code?: string
-      password_hash_client?: string
-    }
+	app.post('/api/recover/reset', async (req, res) => {
+		try {
+			const { email, code, password_hash_client } = req.body as {
+				email?: string
+				code?: string
+				password_hash_client?: string
+			}
 
-    if (!email || !code || !password_hash_client) {
-      return res.status(400).json({ error: 'missing_fields' })
-    }
+			if (!email || !code || !password_hash_client) {
+				return res.status(400).json({ error: 'missing_fields' })
+			}
 
-    if (!/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-      return res.status(400).json({ error: 'invalid_password_hash' })
-    }
+			if (!/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+				return res.status(400).json({ error: 'invalid_password_hash' })
+			}
 
-    const normalized = email.trim().toLowerCase()
-    const result = await pool.query(
-      `SELECT recovery_code, recovery_code_created_at
+			const normalized = email.trim().toLowerCase()
+			const result = await pool.query(
+				`SELECT recovery_code, recovery_code_created_at
        FROM users WHERE email = $1 LIMIT 1`,
-      [normalized]
-    )
+				[normalized]
+			)
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'user_not_found' })
-    }
+			if (result.rowCount === 0) {
+				return res.status(404).json({ error: 'user_not_found' })
+			}
 
-    const user = result.rows[0]
-    const codeValid = user.recovery_code === code
-    const expired = Date.now() - new Date(user.recovery_code_created_at).getTime() > 15 * 60 * 1000
+			const user = result.rows[0]
+			const codeValid = user.recovery_code === code
+			const expired = Date.now() - new Date(user.recovery_code_created_at).getTime() > 15 * 60 * 1000
 
-    if (!codeValid) {
-      return res.status(401).json({ error: 'invalid_code' })
-    }
+			if (!codeValid) {
+				return res.status(401).json({ error: 'invalid_code' })
+			}
 
-    if (expired) {
-      return res.status(410).json({ error: 'code_expired' })
-    }
+			if (expired) {
+				return res.status(410).json({ error: 'code_expired' })
+			}
 
-    // Re-hashear con pepper + bcrypt
-    const pepper = process.env.PEPPER_SECRET || ''
-    const combined = password_hash_client + pepper
-    const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
-    const serverHash = await bcrypt.hash(combined, saltRounds)
+			// Re-hashear con pepper + bcrypt
+			const pepper = process.env.PEPPER_SECRET || ''
+			const combined = password_hash_client + pepper
+			const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
+			const serverHash = await bcrypt.hash(combined, saltRounds)
 
-    await pool.query(
-      `UPDATE users SET password_hash = $1, recovery_code = NULL, recovery_code_created_at = NULL WHERE email = $2`,
-      [serverHash, normalized]
-    )
+			await pool.query(
+				`UPDATE users SET password_hash = $1, recovery_code = NULL, recovery_code_created_at = NULL WHERE email = $2`,
+				[serverHash, normalized]
+			)
 
-    return res.json({ status: 'password_updated' })
-  } catch (err) {
-    console.error('Recover reset error:', err)
-    return res.status(500).json({ error: 'recover_reset_failed' })
-  }
-})
+			return res.json({ status: 'password_updated' })
+		} catch (err) {
+			console.error('Recover reset error:', err)
+			return res.status(500).json({ error: 'recover_reset_failed' })
+		}
+	})
 
 	app.post('/api/analyze-photo', async (req, res) => {
-  try {
-    console.log('Petición recibida en /api/analyze-photo')
+		try {
+			console.log('Petición recibida en /api/analyze-photo')
 
-    const { image_base64 } = req.body as { image_base64?: string }
-    console.log('image_base64 recibido:', image_base64?.slice(0, 50) + '...')
+			const { image_base64 } = req.body as { image_base64?: string }
+			console.log('image_base64 recibido:', image_base64?.slice(0, 50) + '...')
 
-    // Validación básica
-    if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
-      console.warn('image_base64 inválido o ausente')
-      return res.status(400).json({ error: 'invalid_image_data' })
-    }
+			// Validación básica
+			if (!image_base64 || typeof image_base64 !== 'string' || !image_base64.startsWith('data:image/')) {
+				console.warn('image_base64 inválido o ausente')
+				return res.status(400).json({ error: 'invalid_image_data' })
+			}
 
-    // Extraer metadata del base64
-    const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
-    if (!match) {
-      console.warn('Formato base64 inválido')
-      return res.status(400).json({ error: 'invalid_base64_format' })
-    }
+			// Extraer metadata del base64
+			const match = image_base64.match(/^data:(image\/\w+);base64,(.+)$/)
+			if (!match) {
+				console.warn('Formato base64 inválido')
+				return res.status(400).json({ error: 'invalid_base64_format' })
+			}
 
-    const contentType = match[1] // e.g. image/jpeg
-    const base64Data = match[2]
-    console.log('contentType extraído:', contentType)
+			const contentType = match[1] // e.g. image/jpeg
+			const base64Data = match[2]
+			console.log('contentType extraído:', contentType)
 
-    const buffer = Buffer.from(base64Data, 'base64')
-    console.log('Buffer generado. Tamaño:', buffer.length)
+			const buffer = Buffer.from(base64Data, 'base64')
+			console.log('Buffer generado. Tamaño:', buffer.length)
 
-    // Validación de tamaño mínimo
-    if (buffer.length < 10000) {
-      console.warn('Buffer demasiado pequeño para ser imagen válida')
-      return res.status(400).json({ error: 'image_too_small' })
-    }
+			// Validación de tamaño mínimo
+			if (buffer.length < 10000) {
+				console.warn('Buffer demasiado pequeño para ser imagen válida')
+				return res.status(400).json({ error: 'image_too_small' })
+			}
 
-    const filename = `upload.${contentType.split('/')[1]}`
-    console.log(' Nombre de archivo simulado:', filename)
+			const filename = `upload.${contentType.split('/')[1]}`
+			console.log(' Nombre de archivo simulado:', filename)
 
-    console.log('Enviando imagen a IA...')
-    const result = await identifyImageFromBuffer(buffer, filename, contentType)
-    console.log('Resultado IA recibido:', result)
+			console.log('Enviando imagen a IA...')
+			const result = await identifyImageFromBuffer(buffer, filename, contentType)
+			console.log('Resultado IA recibido:', result)
 
-    return res.json({
-      result: result.breed,
-      confidence: result.confidence,
-    })
-  } catch (err) {
-    console.error('Error atrapado en /api/analyze-photo')
+			return res.json({
+				result: result.breed,
+				confidence: result.confidence,
+			})
+		} catch (err) {
+			console.error('Error atrapado en /api/analyze-photo')
 
-    if (err instanceof AiError) {
-      console.error('AiError:', err.message, '| Código:', err.code)
-      return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
-    }
+			if (err instanceof AiError) {
+				console.error('AiError:', err.message, '| Código:', err.code)
+				return res.status(502).json({ error: err.code || 'ai_error', message: err.message })
+			}
 
-    console.error('Error inesperado:', err instanceof Error ? err.message : String(err))
-    return res.status(500).json({
-      error: 'analyze_failed',
-      message: err instanceof Error ? err.message : String(err)
-    })
-  }
-})
+			console.error('Error inesperado:', err instanceof Error ? err.message : String(err))
+			return res.status(500).json({
+				error: 'analyze_failed',
+				message: err instanceof Error ? err.message : String(err)
+			})
+		}
+	})
 
 	// API-prefixed endpoints for frontend compatibility
 	app.get('/api/categories', async (_req, res) => {
