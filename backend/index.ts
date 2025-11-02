@@ -6,7 +6,10 @@ import initDb from './init-db';
 import multer from 'multer';
 import bcrypt from 'bcrypt';
 
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
 
 import type { QueryResult } from 'pg'
 import { identifyImageFromBuffer, AiError } from './ai/aiClient'
@@ -318,24 +321,11 @@ function startServer() {
 
 	//endpoints de recuperar contraseña
 
-
-	const transporter = nodemailer.createTransport({
-		host: 'smtp.gmail.com',
-		port: 587,
-		secure: false,
-		auth: {
-			user: process.env.SMTP_USER,
-			pass: process.env.SMTP_PASS,
-		},
-	})
-
-	app.post('/api/recover/request', async (req, res) => {
+app.post('/api/recover/request', async (req, res) => {
 	try {
 		console.log('[RECOVER] Solicitud recibida:', req.body)
 
-		const start = Date.now()
 		const { email } = req.body as { email?: string }
-
 		if (!email || typeof email !== 'string') {
 			console.warn('[RECOVER] Email inválido:', email)
 			return res.status(400).json({ error: 'invalid_email' })
@@ -344,10 +334,7 @@ function startServer() {
 		const normalized = email.trim().toLowerCase()
 		console.log('[RECOVER] Email normalizado:', normalized)
 
-		const dbStart = Date.now()
 		const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
-		console.log('[RECOVER] Consulta SELECT completada en', Date.now() - dbStart, 'ms')
-
 		if (result.rowCount === 0) {
 			console.warn('[RECOVER] Usuario no encontrado:', normalized)
 			return res.status(404).json({ error: 'user_not_found' })
@@ -356,33 +343,27 @@ function startServer() {
 		const code = Math.floor(100000 + Math.random() * 900000).toString()
 		console.log('[RECOVER] Código generado:', code)
 
-		const updateStart = Date.now()
 		await pool.query(
 			'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
 			[code, normalized]
 		)
-		console.log('[RECOVER] UPDATE completado en', Date.now() - updateStart, 'ms')
+		console.log('[RECOVER] Código guardado en DB')
 
-		const mailStart = Date.now()
-		console.log('[RECOVER] Enviando correo a:', normalized)
-
-		await transporter.sendMail({
-			from: '"Mascotas App" <no-reply@mascotas.com>',
+		const response = await resend.emails.send({
+			from: 'Mascotas App <onboarding@resend.dev>',
 			to: normalized,
 			subject: 'Código de recuperación de contraseña',
-			text: `Tu código de recuperación es: ${code}. Este código expirará en 15 minutos.`,
 			html: `<p>Tu código de recuperación es: <strong>${code}</strong></p><p>Este código expirará en 15 minutos.</p>`,
 		})
 
-		console.log('[RECOVER] Correo enviado en', Date.now() - mailStart, 'ms')
-		console.log('[RECOVER] Flujo completo en', Date.now() - start, 'ms')
-
+		console.log('[RECOVER] Correo enviado con Resend:', response)
 		return res.json({ status: 'code_generated' })
 	} catch (err) {
 		console.error('[RECOVER] Error en /request:', err)
 		return res.status(500).json({ error: 'recover_request_failed' })
 	}
 })
+
 
 	app.post('/api/recover/verify', async (req, res) => {
 		try {
