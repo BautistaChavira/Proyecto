@@ -179,57 +179,60 @@ function startServer() {
 	});
 
 	app.post('/api/login', async (req, res) => {
-		try {
-			const { username, password_hash_client } = req.body as { username?: string; password_hash_client?: string }
+  try {
+    const { username, password_hash_client } = req.body as {
+      username?: string
+      password_hash_client?: string
+    }
 
-			// Validaciones iniciales
-			if (!username || !password_hash_client) {
-				return res.status(400).json({ error: 'missing_username_or_password' })
-			}
-			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
-				return res.status(400).json({ error: 'invalid_username' })
-			}
-			if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-				return res.status(400).json({ error: 'invalid_password_hash' })
-			}
+    // Validaciones iniciales
+    if (!username || !password_hash_client) {
+      return res.status(400).json({ error: 'missing_username_or_password' })
+    }
+    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+      return res.status(400).json({ error: 'invalid_username' })
+    }
+    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+      return res.status(400).json({ error: 'invalid_password_hash' })
+    }
 
-			// Normalizar email/username
-			const email = username.trim().toLowerCase()
+    // Normalizar nombre de usuario
+    const normalizedName = username.trim().toLowerCase()
 
-			// Buscar usuario en la base de datos
-			const result = (await pool.query(
-				'SELECT id, email, password_hash, name FROM users WHERE email = $1 LIMIT 1',
-				[email]
-			)) as QueryResult | null
+    // Buscar usuario por nombre
+    const result = await pool.query(
+      'SELECT id, name, email, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
+      [normalizedName]
+    )
 
-			// Comprobación defensiva
-			if (!result || typeof result.rowCount !== 'number') {
-				console.warn('Unexpected query result for login check', result)
-				return res.status(500).json({ error: 'login_query_failed' })
-			}
-			if (result.rowCount === 0) {
-				return res.status(401).json({ error: 'invalid_credentials' })
-			}
+    // Comprobación defensiva
+    if (!result || typeof result.rowCount !== 'number') {
+      console.warn('Unexpected query result for login check', result)
+      return res.status(500).json({ error: 'login_query_failed' })
+    }
+    if (result.rowCount === 0) {
+      return res.status(401).json({ error: 'invalid_credentials' })
+    }
 
-			const user = result.rows[0]
-			const storedHash = user.password_hash
+    const user = result.rows[0]
+    const storedHash = user.password_hash
 
-			// Recombinar el hash cliente con el pepper y comparar con bcrypt
-			const pepper = process.env.PEPPER_SECRET || ''
-			const combined = password_hash_client + pepper
-			const match = await bcrypt.compare(combined, storedHash)
+    // Recombinar el hash cliente con el pepper y comparar con bcrypt
+    const pepper = process.env.PEPPER_SECRET || ''
+    const combined = password_hash_client + pepper
+    const match = await bcrypt.compare(combined, storedHash)
 
-			if (!match) {
-				return res.status(401).json({ error: 'invalid_credentials' })
-			}
+    if (!match) {
+      return res.status(401).json({ error: 'invalid_credentials' })
+    }
 
-			// Autenticación exitosa
-			return res.json({ name: user.email })
-		} catch (err) {
-			console.error('Login error:', err)
-			return res.status(500).json({ error: 'login_failed' })
-		}
-	})
+    // Autenticación exitosa
+    return res.json({ name: user.name })
+  } catch (err) {
+    console.error('Login error:', err)
+    return res.status(500).json({ error: 'login_failed' })
+  }
+})
 
 	app.post('/api/register', async (req, res) => {
 		try {
@@ -281,6 +284,135 @@ function startServer() {
 			return res.status(500).json({ error: 'register_failed' })
 		}
 	})
+
+	//endpoints de recuperar contraseña
+
+	app.post('/api/recover/request', async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string }
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'invalid_email' })
+    }
+
+    const normalized = email.trim().toLowerCase()
+    const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'user_not_found' })
+    }
+
+    // Generar código temporal (puedes usar UUID, OTP, etc.)
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+
+    // Guardar código en tabla temporal o en campo de usuario (aquí lo guardamos en users)
+    await pool.query(
+      'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
+      [code, normalized]
+    )
+
+    // Aquí podrías enviar el código por correo (lo haces desde el frontend)
+    return res.json({ status: 'code_generated' })
+  } catch (err) {
+    console.error('Recover request error:', err)
+    return res.status(500).json({ error: 'recover_request_failed' })
+  }
+})
+
+app.post('/api/recover/verify', async (req, res) => {
+  try {
+    const { email, code } = req.body as { email?: string; code?: string }
+
+    if (!email || !code) {
+      return res.status(400).json({ error: 'missing_email_or_code' })
+    }
+
+    const normalized = email.trim().toLowerCase()
+    const result = await pool.query(
+      `SELECT recovery_code, recovery_code_created_at
+       FROM users WHERE email = $1 LIMIT 1`,
+      [normalized]
+    )
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'user_not_found' })
+    }
+
+    const user = result.rows[0]
+    const codeValid = user.recovery_code === code
+    const expired = Date.now() - new Date(user.recovery_code_created_at).getTime() > 15 * 60 * 1000
+
+    if (!codeValid) {
+      return res.status(401).json({ error: 'invalid_code' })
+    }
+
+    if (expired) {
+      return res.status(410).json({ error: 'code_expired' })
+    }
+
+    return res.json({ status: 'code_valid' })
+  } catch (err) {
+    console.error('Recover verify error:', err)
+    return res.status(500).json({ error: 'recover_verify_failed' })
+  }
+})
+
+app.post('/api/recover/reset', async (req, res) => {
+  try {
+    const { email, code, password_hash_client } = req.body as {
+      email?: string
+      code?: string
+      password_hash_client?: string
+    }
+
+    if (!email || !code || !password_hash_client) {
+      return res.status(400).json({ error: 'missing_fields' })
+    }
+
+    if (!/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+      return res.status(400).json({ error: 'invalid_password_hash' })
+    }
+
+    const normalized = email.trim().toLowerCase()
+    const result = await pool.query(
+      `SELECT recovery_code, recovery_code_created_at
+       FROM users WHERE email = $1 LIMIT 1`,
+      [normalized]
+    )
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'user_not_found' })
+    }
+
+    const user = result.rows[0]
+    const codeValid = user.recovery_code === code
+    const expired = Date.now() - new Date(user.recovery_code_created_at).getTime() > 15 * 60 * 1000
+
+    if (!codeValid) {
+      return res.status(401).json({ error: 'invalid_code' })
+    }
+
+    if (expired) {
+      return res.status(410).json({ error: 'code_expired' })
+    }
+
+    // Re-hashear con pepper + bcrypt
+    const pepper = process.env.PEPPER_SECRET || ''
+    const combined = password_hash_client + pepper
+    const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
+    const serverHash = await bcrypt.hash(combined, saltRounds)
+
+    await pool.query(
+      `UPDATE users SET password_hash = $1, recovery_code = NULL, recovery_code_created_at = NULL WHERE email = $2`,
+      [serverHash, normalized]
+    )
+
+    return res.json({ status: 'password_updated' })
+  } catch (err) {
+    console.error('Recover reset error:', err)
+    return res.status(500).json({ error: 'recover_reset_failed' })
+  }
+})
 
 	app.post('/api/analyze-photo', async (req, res) => {
   try {
