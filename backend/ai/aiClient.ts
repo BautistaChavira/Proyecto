@@ -19,9 +19,15 @@ export class AiError extends Error {
 const validPets = [
   'dog', 'cat', 'rabbit', 'hamster', 'goldfish', 'turtle',
   'parrot', 'canary', 'guinea pig', 'ferret', 'chinchilla',
-  'budgerigar', 'lovebird', 'cockatiel', 'labrador retriever',
-  'german shepherd', 'persian cat', 'siamese cat'
+  'budgerigar', 'lovebird', 'cockatiel', 'labrador', 'shepherd',
+  'persian', 'siamese'
 ]
+
+// Validación flexible: busca si alguna palabra del label coincide con una mascota
+function esMascota(label: string): boolean {
+  const palabras = label.toLowerCase().split(/[\s,]+/)
+  return palabras.some(palabra => validPets.includes(palabra))
+}
 
 export async function identifyImageFromBuffer(
   buffer: Buffer,
@@ -66,7 +72,7 @@ export async function identifyImageFromBuffer(
   }
 
   const label = result[0].label.trim().toLowerCase()
-  const isPet = validPets.includes(label)
+  const isPet = esMascota(label)
 
   if (!isPet) {
     console.warn('[AI] No es mascota:', label)
