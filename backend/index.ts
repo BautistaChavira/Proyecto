@@ -180,192 +180,208 @@ function startServer() {
 	});
 
 	app.post('/api/login', async (req, res) => {
-  try {
-    const { username, password_hash_client } = req.body as {
-      username?: string
-      password_hash_client?: string
-    }
+		try {
+			const { username, password_hash_client } = req.body as {
+				username?: string
+				password_hash_client?: string
+			}
 
-    console.log('[LOGIN] Datos recibidos:', { username, password_hash_client })
+			console.log('[LOGIN] Datos recibidos:', { username, password_hash_client })
 
-    // Validaciones iniciales
-    if (!username || !password_hash_client) {
-      console.warn('[LOGIN] Faltan campos obligatorios')
-      return res.status(400).json({ error: 'missing_fields' })
-    }
+			// Validaciones iniciales
+			if (!username || !password_hash_client) {
+				console.warn('[LOGIN] Faltan campos obligatorios')
+				return res.status(400).json({ error: 'missing_fields' })
+			}
 
-    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
-      console.warn('[LOGIN] Username inválido:', username)
-      return res.status(400).json({ error: 'invalid_username' })
-    }
+			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+				console.warn('[LOGIN] Username inválido:', username)
+				return res.status(400).json({ error: 'invalid_username' })
+			}
 
-    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-      console.warn('[LOGIN] Hash inválido:', password_hash_client)
-      return res.status(400).json({ error: 'invalid_password_hash' })
-    }
+			if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+				console.warn('[LOGIN] Hash inválido:', password_hash_client)
+				return res.status(400).json({ error: 'invalid_password_hash' })
+			}
 
-    const normalizedName = username.trim().toLowerCase()
-    console.log('[LOGIN] Nombre normalizado:', normalizedName)
+			const normalizedName = username.trim().toLowerCase()
+			console.log('[LOGIN] Nombre normalizado:', normalizedName)
 
-    // Buscar usuario por nombre
-    const result = await pool.query(
-      'SELECT id, name, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
-      [normalizedName]
-    )
+			// Buscar usuario por nombre
+			const result = await pool.query(
+				'SELECT id, name, password_hash FROM users WHERE LOWER(name) = $1 LIMIT 1',
+				[normalizedName]
+			)
 
-    console.log('[LOGIN] Resultado de búsqueda de usuario:', result.rowCount)
+			console.log('[LOGIN] Resultado de búsqueda de usuario:', result.rowCount)
 
-    if (result.rowCount === 0) {
-      console.warn('[LOGIN] Usuario no encontrado:', normalizedName)
-      return res.status(401).json({ error: 'invalid_credentials' })
-    }
+			if (result.rowCount === 0) {
+				console.warn('[LOGIN] Usuario no encontrado:', normalizedName)
+				return res.status(401).json({ error: 'invalid_credentials' })
+			}
 
-    const user = result.rows[0]
-    const storedHash = user.password_hash
+			const user = result.rows[0]
+			const storedHash = user.password_hash
 
-    const pepper = process.env.PEPPER_SECRET || ''
-    const combined = password_hash_client + pepper
+			const pepper = process.env.PEPPER_SECRET || ''
+			const combined = password_hash_client + pepper
 
-    console.log('[LOGIN] Comparando hash con bcrypt...')
-    const match = await bcrypt.compare(combined, storedHash)
+			console.log('[LOGIN] Comparando hash con bcrypt...')
+			const match = await bcrypt.compare(combined, storedHash)
 
-    if (!match) {
-      console.warn('[LOGIN] Contraseña incorrecta para usuario:', normalizedName)
-      return res.status(401).json({ error: 'invalid_credentials' })
-    }
+			if (!match) {
+				console.warn('[LOGIN] Contraseña incorrecta para usuario:', normalizedName)
+				return res.status(401).json({ error: 'invalid_credentials' })
+			}
 
-    console.log('[LOGIN] Autenticación exitosa para:', user.name)
-    return res.json({ name: user.name })
-  } catch (err) {
-    console.error('[LOGIN] Error inesperado:', err)
-    return res.status(500).json({ error: 'login_failed' })
-  }
-})
+			console.log('[LOGIN] Autenticación exitosa para:', user.name)
+			return res.json({ name: user.name })
+		} catch (err) {
+			console.error('[LOGIN] Error inesperado:', err)
+			return res.status(500).json({ error: 'login_failed' })
+		}
+	})
 
 	app.post('/api/register', async (req, res) => {
-  try {
-    const { email, username, password_hash_client } = req.body as {
-      email?: string
-      username?: string
-      password_hash_client?: string
-    }
+		try {
+			const { email, username, password_hash_client } = req.body as {
+				email?: string
+				username?: string
+				password_hash_client?: string
+			}
 
-    console.log('[REGISTER] Datos recibidos:', { email, username, password_hash_client })
+			console.log('[REGISTER] Datos recibidos:', { email, username, password_hash_client })
 
-    // Validaciones iniciales
-    if (!email || !username || !password_hash_client) {
-      console.warn('[REGISTER] Faltan campos obligatorios')
-      return res.status(400).json({ error: 'missing_fields' })
-    }
+			// Validaciones iniciales
+			if (!email || !username || !password_hash_client) {
+				console.warn('[REGISTER] Faltan campos obligatorios')
+				return res.status(400).json({ error: 'missing_fields' })
+			}
 
-    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      console.warn('[REGISTER] Email inválido:', email)
-      return res.status(400).json({ error: 'invalid_email' })
-    }
+			if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+				console.warn('[REGISTER] Email inválido:', email)
+				return res.status(400).json({ error: 'invalid_email' })
+			}
 
-    if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
-      console.warn('[REGISTER] Username inválido:', username)
-      return res.status(400).json({ error: 'invalid_username' })
-    }
+			if (typeof username !== 'string' || username.length < 3 || username.length > 255) {
+				console.warn('[REGISTER] Username inválido:', username)
+				return res.status(400).json({ error: 'invalid_username' })
+			}
 
-    if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
-      console.warn('[REGISTER] Hash inválido:', password_hash_client)
-      return res.status(400).json({ error: 'invalid_password_hash' })
-    }
+			if (typeof password_hash_client !== 'string' || !/^[a-f0-9]{64}$/i.test(password_hash_client)) {
+				console.warn('[REGISTER] Hash inválido:', password_hash_client)
+				return res.status(400).json({ error: 'invalid_password_hash' })
+			}
 
-    const normalizedEmail = email.trim().toLowerCase()
-    const normalizedName = username.trim()
+			const normalizedEmail = email.trim().toLowerCase()
+			const normalizedName = username.trim()
 
-    console.log('[REGISTER] Email normalizado:', normalizedEmail)
-    console.log('[REGISTER] Nombre normalizado:', normalizedName)
+			console.log('[REGISTER] Email normalizado:', normalizedEmail)
+			console.log('[REGISTER] Nombre normalizado:', normalizedName)
 
-    // Verificar si el correo ya existe
-    const result = await pool.query(
-      'SELECT id FROM users WHERE email = $1 LIMIT 1',
-      [normalizedEmail]
-    )
+			// Verificar si el correo ya existe
+			const result = await pool.query(
+				'SELECT id FROM users WHERE email = $1 LIMIT 1',
+				[normalizedEmail]
+			)
 
-    console.log('[REGISTER] Resultado de búsqueda de email:', result.rowCount)
+			console.log('[REGISTER] Resultado de búsqueda de email:', result.rowCount)
 
-    if (result.rowCount === 0) {
-      const pepper = process.env.PEPPER_SECRET || ''
-      const combined = password_hash_client + pepper
-      const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
+			if (result.rowCount === 0) {
+				const pepper = process.env.PEPPER_SECRET || ''
+				const combined = password_hash_client + pepper
+				const saltRounds = Number(process.env.BCRYPT_ROUNDS) || 12
 
-      console.log('[REGISTER] Generando hash con bcrypt...')
-      const serverHash = await bcrypt.hash(combined, saltRounds)
-      console.log('[REGISTER] Hash generado')
+				console.log('[REGISTER] Generando hash con bcrypt...')
+				const serverHash = await bcrypt.hash(combined, saltRounds)
+				console.log('[REGISTER] Hash generado')
 
-      // Insertar nuevo usuario
-      const insert = await pool.query(
-        `INSERT INTO users (email, password_hash, name, created_at)
+				// Insertar nuevo usuario
+				const insert = await pool.query(
+					`INSERT INTO users (email, password_hash, name, created_at)
          VALUES ($1, $2, $3, NOW())
          RETURNING id, email, name`,
-        [normalizedEmail, serverHash, normalizedName]
-      )
+					[normalizedEmail, serverHash, normalizedName]
+				)
 
-      console.log('[REGISTER] Usuario insertado:', insert.rows[0])
-      return res.status(201).json({ name: insert.rows[0].name })
-    }
+				console.log('[REGISTER] Usuario insertado:', insert.rows[0])
+				return res.status(201).json({ name: insert.rows[0].name })
+			}
 
-    console.warn('[REGISTER] Usuario ya existe:', normalizedEmail)
-    return res.status(409).json({ error: 'user_already_exists' })
-  } catch (err) {
-    console.error('[REGISTER] Error inesperado:', err)
-    return res.status(500).json({ error: 'register_failed' })
-  }
-})
+			console.warn('[REGISTER] Usuario ya existe:', normalizedEmail)
+			return res.status(409).json({ error: 'user_already_exists' })
+		} catch (err) {
+			console.error('[REGISTER] Error inesperado:', err)
+			return res.status(500).json({ error: 'register_failed' })
+		}
+	})
 
 	//endpoints de recuperar contraseña
 
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+	const transporter = nodemailer.createTransport({
+		host: 'smtp.gmail.com',
+		port: 587,
+		secure: false,
+		auth: {
+			user: process.env.SMTP_USER,
+			pass: process.env.SMTP_PASS,
+		},
+	})
 
-app.post('/api/recover/request', async (req, res) => {
-  try {
-    const { email } = req.body as { email?: string }
+	app.post('/api/recover/request', async (req, res) => {
+	try {
+		console.log('[RECOVER] Solicitud recibida:', req.body)
 
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'invalid_email' })
-    }
+		const start = Date.now()
+		const { email } = req.body as { email?: string }
 
-    const normalized = email.trim().toLowerCase()
-    const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
+		if (!email || typeof email !== 'string') {
+			console.warn('[RECOVER] Email inválido:', email)
+			return res.status(400).json({ error: 'invalid_email' })
+		}
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'user_not_found' })
-    }
+		const normalized = email.trim().toLowerCase()
+		console.log('[RECOVER] Email normalizado:', normalized)
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
+		const dbStart = Date.now()
+		const result = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalized])
+		console.log('[RECOVER] Consulta SELECT completada en', Date.now() - dbStart, 'ms')
 
-    await pool.query(
-      'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
-      [code, normalized]
-    )
+		if (result.rowCount === 0) {
+			console.warn('[RECOVER] Usuario no encontrado:', normalized)
+			return res.status(404).json({ error: 'user_not_found' })
+		}
 
-    // Enviar correo
-    await transporter.sendMail({
-      from: '"Mascotas App" <no-reply@mascotas.com>',
-      to: normalized,
-      subject: 'Código de recuperación de contraseña',
-      text: `Tu código de recuperación es: ${code}. Este código expirará en 15 minutos.`,
-      html: `<p>Tu código de recuperación es: <strong>${code}</strong></p><p>Este código expirará en 15 minutos.</p>`,
-    })
+		const code = Math.floor(100000 + Math.random() * 900000).toString()
+		console.log('[RECOVER] Código generado:', code)
 
-    console.log('[RECOVER] Código enviado por correo a:', normalized)
-    return res.json({ status: 'code_generated' })
-  } catch (err) {
-    console.error('[RECOVER] Error en /request:', err)
-    return res.status(500).json({ error: 'recover_request_failed' })
-  }
+		const updateStart = Date.now()
+		await pool.query(
+			'UPDATE users SET recovery_code = $1, recovery_code_created_at = NOW() WHERE email = $2',
+			[code, normalized]
+		)
+		console.log('[RECOVER] UPDATE completado en', Date.now() - updateStart, 'ms')
+
+		const mailStart = Date.now()
+		console.log('[RECOVER] Enviando correo a:', normalized)
+
+		await transporter.sendMail({
+			from: '"Mascotas App" <no-reply@mascotas.com>',
+			to: normalized,
+			subject: 'Código de recuperación de contraseña',
+			text: `Tu código de recuperación es: ${code}. Este código expirará en 15 minutos.`,
+			html: `<p>Tu código de recuperación es: <strong>${code}</strong></p><p>Este código expirará en 15 minutos.</p>`,
+		})
+
+		console.log('[RECOVER] Correo enviado en', Date.now() - mailStart, 'ms')
+		console.log('[RECOVER] Flujo completo en', Date.now() - start, 'ms')
+
+		return res.json({ status: 'code_generated' })
+	} catch (err) {
+		console.error('[RECOVER] Error en /request:', err)
+		return res.status(500).json({ error: 'recover_request_failed' })
+	}
 })
 
 	app.post('/api/recover/verify', async (req, res) => {
