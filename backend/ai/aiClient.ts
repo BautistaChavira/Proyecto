@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 export type IdentifyResult = {
   breed: string
   confidence?: number
+  status: 'ok' | 'no_aplica'
 }
 
 export class AiError extends Error {
@@ -14,6 +15,14 @@ export class AiError extends Error {
   }
 }
 
+// Lista de mascotas válidas en inglés (ImageNet-style)
+const validPets = [
+  'dog', 'cat', 'rabbit', 'hamster', 'goldfish', 'turtle',
+  'parrot', 'canary', 'guinea pig', 'ferret', 'chinchilla',
+  'budgerigar', 'lovebird', 'cockatiel', 'labrador retriever',
+  'german shepherd', 'persian cat', 'siamese cat'
+]
+
 export async function identifyImageFromBuffer(
   buffer: Buffer,
   filename: string,
@@ -22,10 +31,9 @@ export async function identifyImageFromBuffer(
   const AI_API_URL = process.env.AI_API_URL
   const AI_API_KEY = process.env.AI_API_KEY
 
-  // ✅ Log temporal para verificar variables en Render
-  console.log('Se usó la API key y URL:', {
+  console.log('Usando AI con:', {
     AI_API_URL,
-    AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...' // solo muestra el inicio por seguridad
+    AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...'
   })
 
   if (!AI_API_URL) throw new AiError('AI_API_URL missing', 'config')
@@ -57,8 +65,21 @@ export async function identifyImageFromBuffer(
     throw new AiError('No label found in response', 'no_label')
   }
 
+  const label = result[0].label.trim().toLowerCase()
+  const isPet = validPets.includes(label)
+
+  if (!isPet) {
+    console.warn('[AI] No es mascota:', label)
+    return {
+      breed: label,
+      confidence: result[0].score,
+      status: 'no_aplica'
+    }
+  }
+
   return {
-    breed: result[0].label,
-    confidence: result[0].score
+    breed: label,
+    confidence: result[0].score,
+    status: 'ok'
   }
 }
