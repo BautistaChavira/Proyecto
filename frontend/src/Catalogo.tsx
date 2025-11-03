@@ -141,7 +141,7 @@ export default function Catalogo() {
               <img className="catalog-hero" src={c.img} alt={c.title} />
               <div className="catalog-body">
                 <h3>{c.title}</h3>
-                <p>Explora especies y razas dentro de {c.title}.</p>
+                <p>Explora especies y razas que tenemos registradas en nuestra base de datos{c.title}.</p>
               </div>
             </article>
           ))}

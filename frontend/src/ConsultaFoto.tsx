@@ -4,7 +4,7 @@ import { API_URLS, fetchWithTimeout } from './config'
 import './ConsultaFoto.css'
 
 const validBreeds = [
-  'doberman pinscher', 'doberman', 'golden retriever', 'german shepherd', 'labrador retriever',
+  'dog', 'cat', 'bunny', 'hammster', 'doberman pinscher', 'doberman', 'golden retriever', 'german shepherd', 'labrador retriever',
   'bulldog', 'poodle', 'chihuahua', 'beagle', 'boxer', 'dachshund', 'rottweiler',
   'shih tzu', 'husky', 'great dane', 'border collie', 'cocker spaniel', 'basset hound',
   'akita', 'malinois', 'samoyed', 'terrier', 'greyhound', 'whippet',

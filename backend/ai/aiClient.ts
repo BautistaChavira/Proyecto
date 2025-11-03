@@ -18,12 +18,12 @@ export class AiError extends Error {
 // Lista ampliada de razas de perros y gatos en inglés
 const validBreeds = [
   // Perros
-  'doberman pinscher', 'golden retriever', 'german shepherd', 'labrador retriever',
+  'dog', 'doberman pinscher', 'golden retriever', 'german shepherd', 'labrador retriever',
   'bulldog', 'poodle', 'chihuahua', 'beagle', 'boxer', 'dachshund', 'rottweiler',
   'shih tzu', 'husky', 'great dane', 'border collie', 'cocker spaniel', 'basset hound',
   'akita', 'malinois', 'samoyed', 'terrier', 'greyhound', 'whippet',
   // Gatos
-  'siamese cat', 'persian cat', 'maine coon', 'bengal cat', 'sphynx',
+  'cat', 'siamese cat', 'persian cat', 'maine coon', 'bengal cat', 'sphynx',
   'ragdoll', 'british shorthair', 'russian blue', 'norwegian forest cat',
   'abyssinian', 'savannah cat', 'scottish fold', 'oriental shorthair'
 ]

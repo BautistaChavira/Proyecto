@@ -14,7 +14,7 @@ export default function Home({ onNavigate }: Props) {
             <div className="card-text">
               <h2>Tour Rápido</h2>
               <p>Esta página sirve para facilitar el cuidado de las mascotas. Con el uso de inteligencia artifical podemos ayudarte a identificar la raza de tu mascota.<br/>
-                También tenemos datos sobre múltiples razas de perros y gatos para ayudarte a cuidar de tu mascota</p>
+                También tenemos datos sobre múltiples razas de perros y gatos para ayudarte a cuidar de tu mascota.</p>
             </div>
           </div>
         </article>
