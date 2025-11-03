@@ -17,12 +17,7 @@ export class AiError extends Error {
   }
 }
 
-// Lista ampliada de razas de perros y gatos en inglés
-const validBreeds = [
-  // Especies generales
-  'dog', 'cat', 'bunny', 'hamster',
-
-  // Razas de perro
+const dogBreeds = [
   'doberman pinscher', 'doberman', 'golden retriever', 'german shepherd', 'labrador retriever',
   'bulldog', 'poodle', 'chihuahua', 'beagle', 'boxer', 'dachshund', 'rottweiler',
   'shih tzu', 'husky', 'great dane', 'border collie', 'cocker spaniel', 'basset hound',
@@ -31,9 +26,10 @@ const validBreeds = [
   'cavalier king charles spaniel', 'dalmatian', 'french bulldog', 'havanese',
   'irish setter', 'jack russell terrier', 'miniature schnauzer', 'newfoundland',
   'papillon', 'pembroke welsh corgi', 'pomeranian', 'saint bernard', 'shar pei',
-  'shetland sheepdog', 'shiba inu', 'weimaraner',
+  'shetland sheepdog', 'shiba inu', 'weimaraner'
+]
 
-  // Razas de gato
+const catBreeds = [
   'siamese cat', 'persian cat', 'maine coon', 'bengal cat', 'sphynx',
   'ragdoll', 'british shorthair', 'russian blue', 'norwegian forest cat',
   'abyssinian', 'savannah cat', 'scottish fold', 'oriental shorthair',
@@ -43,19 +39,65 @@ const validBreeds = [
   'selkirk rex', 'snowshoe', 'turkish angora'
 ]
 
-// Validación flexible: detecta si el label contiene alguna raza conocida
+const generalSpecies = [
+  // Mamíferos comunes
+  'dog', 'cat', 'rabbit', 'bunny', 'hamster', 'guinea pig', 'ferret', 'mouse', 'rat', 'chinchilla', 'gerbil', 'hedgehog', 'sugar glider',
+
+  // Aves
+  'parrot', 'budgie', 'canary', 'cockatiel', 'lovebird', 'finch', 'macaw', 'conure', 'parakeet',
+
+  // Reptiles
+  'turtle', 'tortoise', 'lizard', 'gecko', 'iguana', 'snake', 'chameleon', 'bearded dragon',
+
+  // Peces
+  'goldfish', 'betta', 'guppy', 'angelfish', 'koi', 'tetra', 'molly', 'platy',
+
+  // Anfibios
+  'frog', 'toad', 'salamander', 'newt', 'axolotl',
+
+  // Invertebrados
+  'tarantula', 'hermit crab', 'snail', 'ant', 'scorpion'
+]
+
+//Deteccion de raza independiente de si es perro o gato
 function esMascota(label: string): boolean {
   const lower = label.toLowerCase()
-  return validBreeds.some(breed => lower.includes(breed))
+
+  return (
+    dogBreeds.some(breed => lower.includes(breed)) ||
+    catBreeds.some(breed => lower.includes(breed)) ||
+    generalSpecies.some(species => lower.includes(species))
+  )
 }
 
-// Deducción de especie si es mascota
+const especieMap: Record<string, 'dog' | 'cat'> = {
+  // Perros
+  'dog': 'dog',
+  'puppy': 'dog',
+  'canine': 'dog',
+  ...Object.fromEntries(dogBreeds.map(b => [b, 'dog'])),
+
+  // Gatos
+  'cat': 'cat',
+  'kitten': 'cat',
+  'feline': 'cat',
+  ...Object.fromEntries(catBreeds.map(b => [b, 'cat']))
+}
+
+
+// Deducción de especie si es mascota, discrimina entre gatos, perros o ninguno de los dos
 function detectarEspecie(label: string): 'dog' | 'cat' | null {
   const lower = label.toLowerCase()
-  if (lower.includes('dog') || lower.includes('puppy') || lower.includes('canine')) return 'dog'
-  if (lower.includes('cat') || lower.includes('kitten') || lower.includes('feline')) return 'cat'
+
+  for (const key in especieMap) {
+    if (lower.includes(key)) {
+      return especieMap[key]
+    }
+  }
+
   return null
 }
+
 
 export async function identifyImageFromBuffer(
   buffer: Buffer,
