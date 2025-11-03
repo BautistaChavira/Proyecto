@@ -106,7 +106,7 @@ export async function identifyImageFromBuffer(
 ): Promise<IdentifyResult> {
   const AI_API_URL = process.env.AI_API_URL
   const AI_API_KEY = process.env.AI_API_KEY
-  const AI_MODEL = process.env.AI_MODEL ?? 'microsoft/resnet-50'
+  const AI_MODEL = process.env.AI_MODEL
 
   console.log('[AI] Configuración cargada:', {
     AI_API_URL,
@@ -118,6 +118,7 @@ export async function identifyImageFromBuffer(
   })
 
   if (!AI_API_URL) throw new AiError('AI_API_URL missing', 'config')
+  if (!AI_MODEL) throw new AiError('AI_MODEL missing', 'config')
 
   const isRouter = AI_API_URL.endsWith('/hf-inference')
   const headers: Record<string, string> = {
