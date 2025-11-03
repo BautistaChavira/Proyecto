@@ -13,9 +13,8 @@ export default function Home({ onNavigate }: Props) {
             <img className="card-image" src="https://tse2.mm.bing.net/th/id/OIP._TaIGWEpnTUKbakVwDJMMwHaEK?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Destacado" />
             <div className="card-text">
               <h2>Tour Rápido</h2>
-              <p>Esta página sirve para facilitar el cuidado de las mascotas. Con el uso de inteligencia artifical y podemos identificar la 
-                raza de tu mascota y ayudarte a cuidarla dándote la información que necesitas.<br/>
-                Haz click aquí para saber más sobre las funcionalidades de esta página web</p>
+              <p>Esta página sirve para facilitar el cuidado de las mascotas. Con el uso de inteligencia artifical podemos ayudarte a identificar la raza de tu mascota.<br/>
+                También tenemos datos sobre múltiples razas de perros y gatos para ayudarte a cuidar de tu mascota</p>
             </div>
           </div>
         </article>
