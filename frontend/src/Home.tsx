@@ -51,4 +51,5 @@ export default function Home({ onNavigate }: Props) {
       </section>
     </main>
   )
+
 }
