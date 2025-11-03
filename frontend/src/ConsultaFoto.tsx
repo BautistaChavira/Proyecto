@@ -44,7 +44,7 @@ export default function ConsultaFoto({ user }: { user: { id: number; name: strin
     body: JSON.stringify({ image_base64: base64 }),
   })
 
-  const { breed: raza, confidence, isPet, status } = res as {
+  const { breed: raza, confidence, isPet } = res as {
     breed: string
     confidence?: number
     isPet: boolean
