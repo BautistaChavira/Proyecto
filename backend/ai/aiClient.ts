@@ -104,68 +104,46 @@ export async function identifyImageFromBuffer(
   filename: string,
   contentType: string
 ): Promise<IdentifyResult> {
-  const AI_API_URL = process.env.AI_API_URL
   const AI_API_KEY = process.env.AI_API_KEY
-  const AI_MODEL = process.env.AI_MODEL
+  const AI_MODEL = process.env.AI_MODEL // Ej: 'microsoft/resnet-50'
+  const AI_API_URL = process.env.AI_API_URL?.replace(/\/+$/, '') // Ej: 'https://router.huggingface.co'
+
+  if (!AI_API_URL || !AI_MODEL || !AI_API_KEY) {
+    throw new AiError('Faltan variables de entorno AI_API_URL, AI_MODEL o AI_API_KEY', 'config')
+  }
+
+  const fullUrl = `${AI_API_URL}/${AI_MODEL}`
 
   console.log('[AI] Configuración cargada:', {
     AI_API_URL,
-    AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...',
     AI_MODEL,
+    AI_API_KEY: AI_API_KEY.slice(0, 8) + '...',
+    fullUrl,
     bufferSize: buffer.length,
     contentType,
     filename
   })
 
-  if (!AI_API_URL) throw new AiError('AI_API_URL missing', 'config')
-  if (!AI_MODEL) throw new AiError('AI_MODEL missing', 'config')
-
-  const isRouter = AI_API_URL.endsWith('/hf-inference')
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${AI_API_KEY}`
+    Authorization: `Bearer ${AI_API_KEY}`,
+    'Content-Type': contentType
   }
 
-  let resp: FetchResponse
   const startTime = Date.now()
+  let resp: FetchResponse
 
   try {
-    if (isRouter) {
-      const base64 = buffer.toString('base64')
-      const payload = {
-        model: AI_MODEL,
-        inputs: `data:${contentType};base64,${base64}`
-      }
+    console.log('[AI] Enviando imagen binaria a modelo directo:', {
+      url: fullUrl,
+      headers,
+      bufferSize: buffer.length
+    })
 
-      headers['Content-Type'] = 'application/json'
-
-      console.log('[AI] Enviando a router general:', {
-        url: AI_API_URL,
-        headers,
-        payloadPreview: JSON.stringify(payload).slice(0, 200) + '...'
-      })
-
-      resp = await fetch(AI_API_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload)
-      })
-    } else {
-      headers['Content-Type'] = contentType
-
-      const finalUrl = `${AI_API_URL}/route/${AI_MODEL}`
-
-      console.log('[AI] Enviando a ruta directa:', {
-        url: finalUrl,
-        headers,
-        bufferSize: buffer.length
-      })
-
-      resp = await fetch(finalUrl, {
-        method: 'POST',
-        headers,
-        body: buffer
-      })
-    }
+    resp = await fetch(fullUrl, {
+      method: 'POST',
+      headers,
+      body: buffer
+    })
   } catch (err) {
     console.error('[AI] Error de red o fetch:', err)
     throw new AiError('Fetch failed: ' + (err instanceof Error ? err.message : String(err)), 'network')
