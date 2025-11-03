@@ -9,7 +9,7 @@ import Login from './Login'
 
 
 function App() {
-  const [user, setUser] = useState<{ name: string } | null>(null)
+  const [user, setUser] = useState<{ id: number; name: string } | null>(null)
   const [page, setPage] = useState<'home' | 'catalogo' | 'curiosidades' | 'mis-mascotas' | 'consulta-foto'>('home')
   const [showLogin, setShowLogin] = useState(false)
 
@@ -52,7 +52,7 @@ function App() {
       {page === 'catalogo' && <Catalogo />}
       {page === 'curiosidades' && <Curiosidades />}
       {page === 'mis-mascotas' && <MisMascotas onGoToConsulta={() => setPage('consulta-foto')} />}
-      {page === 'consulta-foto' && <ConsultaFoto />}
+      {page === 'consulta-foto' && <ConsultaFoto user={user} />}
     </>
   )
 }

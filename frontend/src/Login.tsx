@@ -4,13 +4,14 @@ import { API_URLS, fetchWithTimeout } from './config'
 
 type Props = {
   onClose: () => void
-  onLogin: (user: { name: string }) => void
+  onLogin: (user: { id: number; name: string }) => void
 }
 
 export default function Login({ onClose, onLogin }: Props) {
   const [mode, setMode] = useState<'login' | 'register' | 'recover'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -22,62 +23,68 @@ export default function Login({ onClose, onLogin }: Props) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   }
 
-async function submitLogin(e: React.FormEvent) {
-  e.preventDefault()
-  setMessage(null)
-  if (!username || !password) {
-    setMessage('Introduce usuario y contraseña')
-    return
-  }
+  async function submitLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setMessage(null)
 
-  setLoading(true)
-  try {
-    const clientHash = await sha256Hex(password)
-
-    const res = await fetchWithTimeout(API_URLS.login, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password_hash_client: clientHash }),
-    })
-
-    const user = res as { name: string }
-    if (!user || !user.name) throw new Error('Respuesta inválida del servidor')
-
-    onLogin(user)
-    onClose()
-  } catch (error: any) {
-    if (error instanceof Error && error.message.includes('401')) {
-      setMessage('Credenciales inválidas')
-    } else {
-      setMessage(error instanceof Error ? error.message : 'Error al iniciar sesión')
+    if (!username || !password) {
+      setMessage('Introduce usuario y contraseña')
+      return
     }
-  } finally {
-    setLoading(false)
+
+    try {
+      setLoading(true)
+      const password_hash_client = await sha256Hex(password)
+
+      const data = await fetchWithTimeout<{ id?: number; name?: string; error?: string }>(API_URLS.login, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password_hash_client })
+      })
+
+      if (!data.name) {
+        setMessage(data.error || 'Error al iniciar sesión')
+        return
+      }
+
+      if (!data.id || !data.name) {
+        setMessage(data.error || 'Error al iniciar sesión')
+        return
+      }
+
+      onLogin({ id: data.id, name: data.name })
+      onClose()
+    } catch (err) {
+      console.error('Login error:', err)
+      setMessage(err instanceof Error ? err.message : 'Error de red o servidor')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   async function submitRegister(e: React.FormEvent) {
     e.preventDefault()
     setMessage(null)
-    if (!username || !password) {
-      setMessage('Rellena usuario y contraseña')
+
+    if (!username || !email || !password) {
+      setMessage('Rellena usuario, correo y contraseña')
       return
     }
 
-    setLoading(true)
     try {
-      const clientHash = await sha256Hex(password)
+      setLoading(true)
+      const password_hash_client = await sha256Hex(password)
 
-      const res = await fetchWithTimeout(API_URLS.register, {
+      const data = await fetchWithTimeout<{ id?: number; name?: string; error?: string }>(API_URLS.register, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password_hash_client: clientHash }),
+        body: JSON.stringify({ email, password_hash_client, username }),
       })
 
-      const user = (res as unknown) as { name: string }
-      if (!user || !user.name) throw new Error('Respuesta inválida del servidor')
+      if (!data.name) throw new Error('Respuesta inválida del servidor')
 
-      onLogin(user)
+      if (!data.id || !data.name) throw new Error('Respuesta inválida del servidor')
+
+      onLogin({ id: data.id, name: data.name })
       onClose()
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Error al registrar usuario')
@@ -85,35 +92,17 @@ async function submitLogin(e: React.FormEvent) {
       setLoading(false)
     }
   }
-
-  async function submitRecover(e: React.FormEvent) {
-    e.preventDefault()
-    setMessage(null)
-    if (!username) {
-      setMessage('Introduce tu nombre de usuario o email')
-      return
-    }
-
-    setLoading(true)
-    try {
-      await fetchWithTimeout(API_URLS.recover, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
-      })
-      setMessage('Si existe la cuenta, recibirás un email con instrucciones.')
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error al procesar la recuperación')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">
       <div className="modal">
         <div className="modal-header">
-          <h3>{mode === 'login' ? 'Iniciar sesión' : mode === 'register' ? 'Registro' : 'Recuperar contraseña'}</h3>
+          <h3>
+            {mode === 'login'
+              ? 'Iniciar sesión'
+              : mode === 'register'
+                ? 'Registro'
+                : ''}
+          </h3>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
@@ -131,7 +120,6 @@ async function submitLogin(e: React.FormEvent) {
               <button type="submit" className="primary-button" disabled={loading}>
                 {loading ? 'Entrando...' : 'Entrar'}
               </button>
-              <button type="button" className="link-button" onClick={() => setMode('recover')}>¿Olvidaste la contraseña?</button>
             </div>
             <div style={{ marginTop: 8 }}>
               ¿No tienes cuenta? <button className="link-button" type="button" onClick={() => setMode('register')}>Regístrate</button>
@@ -144,6 +132,9 @@ async function submitLogin(e: React.FormEvent) {
             <label className="form-row">Nombre de usuario
               <input value={username} onChange={(e) => setUsername(e.target.value)} />
             </label>
+            <label className="form-row">Correo electrónico
+              <input value={email} onChange={(e) => setEmail(e.target.value)} />
+            </label>
             <label className="form-row">Contraseña
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </label>
@@ -155,21 +146,8 @@ async function submitLogin(e: React.FormEvent) {
             </div>
           </form>
         )}
-
-        {mode === 'recover' && (
-          <form onSubmit={submitRecover} className="modal-form">
-            <label className="form-row">Usuario o email
-              <input value={username} onChange={(e) => setUsername(e.target.value)} />
-            </label>
-            <div className="modal-actions">
-              <button type="submit" className="primary-button" disabled={loading}>
-                {loading ? 'Enviando...' : 'Enviar'}
-              </button>
-              <button type="button" className="link-button" onClick={() => setMode('login')}>Volver</button>
-            </div>
-          </form>
-        )}
       </div>
     </div>
   )
+
 }

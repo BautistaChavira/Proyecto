@@ -9,11 +9,13 @@
 
 -- Users (for MisMascotas / authentication)
 CREATE TABLE IF NOT EXISTS users (
-	id SERIAL PRIMARY KEY,
-	email VARCHAR(255) UNIQUE NOT NULL,
-	password_hash VARCHAR(255),
-	name VARCHAR(255),
-	created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255),
+  name VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  recovery_attempts INTEGER DEFAULT 0,
+  recovery_blocked_until TIMESTAMP WITH TIME ZONE
 );
 
 -- Categories for catalog (e.g., Perros, Gatos, Aves)
@@ -58,14 +60,11 @@ CREATE TABLE IF NOT EXISTS curiosidades (
 
 -- User pets (MisMascotas)
 CREATE TABLE IF NOT EXISTS pets (
-	id SERIAL PRIMARY KEY,
-	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-	name VARCHAR(200) NOT NULL,
-	breed_id INTEGER REFERENCES breeds(id) ON DELETE SET NULL,
-	species VARCHAR(100),
-	age INTEGER,
-	notes TEXT,
-	created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  breed TEXT NOT NULL,
+  description TEXT DEFAULT ''
 );
 
 -- Photos for user pets

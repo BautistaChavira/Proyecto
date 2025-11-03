@@ -16,6 +16,9 @@ export const API_URLS = {
   
   // MisMascotas endpoints
   pets: `${API_BASE_URL}/pets`,
+
+  // GuardarMascota
+  savepet: `${API_BASE_URL}/save-pet`,
   
   //AnalizadorIA endpoint
   analyzePhoto: `${API_BASE_URL}/analyze-photo`,
@@ -25,7 +28,7 @@ export const API_URLS = {
 } as const;
 
 // API request timeout (ms)
-export const API_TIMEOUT = 5000;
+export const API_TIMEOUT = 10000;
 
 // Utility for API requests with timeout
 export async function fetchWithTimeout<T>(
@@ -39,7 +42,7 @@ export async function fetchWithTimeout<T>(
   console.log(`[API Request] ${options.method || 'GET'} ${url}`);
   console.log('[Request Headers]:', options.headers);
   if (options.body) {
-    console.log('📦 [Request Body]:', options.body);
+    console.log('[Request Body]:', options.body);
   }
 
   try {

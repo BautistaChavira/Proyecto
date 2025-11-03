@@ -238,7 +238,7 @@ function startServer() {
 			}
 
 			console.log('[LOGIN] Autenticación exitosa para:', user.name)
-			return res.json({ name: user.name })
+			return res.json({ id: user.id, name: user.name })
 		} catch (err) {
 			console.error('[LOGIN] Error inesperado:', err)
 			return res.status(500).json({ error: 'login_failed' })
@@ -319,6 +319,77 @@ function startServer() {
 		}
 	})
 
+	//endpoint para guardar mascota
+	app.post('/api/save-pet', async (req, res) => {
+		try {
+			const { name, breed, description, user_id } = req.body as {
+				name?: string
+				breed?: string
+				description?: string
+				user_id?: number
+			}
+
+			console.log('[PETS] Datos recibidos:', { name, breed, description, user_id })
+
+			// Validaciones básicas
+			if (!name || !breed || !user_id) {
+				console.warn('[PETS] Faltan campos obligatorios')
+				return res.status(400).json({ error: 'missing_fields' })
+			}
+
+			if (typeof name !== 'string' || name.length < 2 || name.length > 255) {
+				return res.status(400).json({ error: 'invalid_name' })
+			}
+
+			if (typeof breed !== 'string' || breed.length < 2 || breed.length > 255) {
+				return res.status(400).json({ error: 'invalid_breed' })
+			}
+
+			if (typeof description !== 'string') {
+				return res.status(400).json({ error: 'invalid_description' })
+			}
+
+			if (typeof user_id !== 'number' || user_id <= 0) {
+				return res.status(400).json({ error: 'invalid_user_id' })
+			}
+
+			// Inserción en la base de datos
+			const result = await pool.query(
+				`INSERT INTO pets (name, breed, description, user_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+				[name.trim(), breed.trim(), description.trim(), user_id]
+			)
+
+			console.log('[PETS] Mascota guardada con ID:', result.rows[0].id)
+			return res.status(201).json({ success: true, pet_id: result.rows[0].id })
+		} catch (err) {
+			console.error('[PETS] Error al guardar mascota:', err)
+			return res.status(500).json({ error: 'insert_failed' })
+		}
+	})
+	//endpoint para obtener mis macotas
+	app.get('/api/pets', async (req, res) => {
+		try {
+			const user_id = parseInt(req.query.user_id as string)
+
+			if (!user_id || isNaN(user_id) || user_id <= 0) {
+				console.warn('[GET /pets] user_id inválido:', req.query.user_id)
+				return res.status(400).json({ error: 'invalid_user_id' })
+			}
+
+			const result = await pool.query(
+				`SELECT id, name, breed, description FROM pets WHERE user_id = $1 ORDER BY id DESC`,
+				[user_id]
+			)
+
+			console.log(`[GET /pets] Mascotas encontradas para usuario ${user_id}:`, result.rowCount)
+			return res.json({ pets: result.rows })
+		} catch (err) {
+			console.error('[GET /pets] Error al obtener mascotas:', err)
+			return res.status(500).json({ error: 'fetch_failed' })
+		}
+	})
 	//endpoints de recuperar contraseña
 
 	app.post('/api/analyze-photo', async (req, res) => {
