@@ -3,21 +3,6 @@ import './App.css'
 import { API_URLS, fetchWithTimeout } from './config'
 import './ConsultaFoto.css'
 
-const validBreeds = [
-  'dog', 'cat', 'bunny', 'hammster', 'doberman pinscher', 'doberman', 'golden retriever', 'german shepherd', 'labrador retriever',
-  'bulldog', 'poodle', 'chihuahua', 'beagle', 'boxer', 'dachshund', 'rottweiler',
-  'shih tzu', 'husky', 'great dane', 'border collie', 'cocker spaniel', 'basset hound',
-  'akita', 'malinois', 'samoyed', 'terrier', 'greyhound', 'whippet',
-  'siamese cat', 'persian cat', 'maine coon', 'bengal cat', 'sphynx',
-  'ragdoll', 'british shorthair', 'russian blue', 'norwegian forest cat',
-  'abyssinian', 'savannah cat', 'scottish fold', 'oriental shorthair'
-]
-
-function esMascota(label: string | undefined): boolean {
-  if (!label) return false
-  const lower = label.toLowerCase()
-  return validBreeds.some(breed => lower.includes(breed))
-}
 
 export default function ConsultaFoto({ user }: { user: { id: number; name: string } | null }) {
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -50,30 +35,33 @@ export default function ConsultaFoto({ user }: { user: { id: number; name: strin
     try {
       const reader = new FileReader()
       reader.onload = async () => {
-        const base64 = reader.result as string
-        setPreview(base64)
+  const base64 = reader.result as string
+  setPreview(base64)
 
-        const res = await fetchWithTimeout(API_URLS.analyzePhoto, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: base64 }),
-        })
+  const res = await fetchWithTimeout(API_URLS.analyzePhoto, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_base64: base64 }),
+  })
 
-        const { result, confidence } = res as { result?: string; confidence?: number }
-        const raza = result?.trim() || 'desconocido'
-        const isPet = esMascota(raza)
-        const confianza = confidence ? ` (confianza: ${(confidence * 100).toFixed(1)}%)` : ''
+  const { breed: raza, confidence, isPet, status } = res as {
+    breed: string
+    confidence?: number
+    isPet: boolean
+    status: 'ok' | 'no_aplica'
+  }
 
-        setBreed(raza)
+  const confianza = confidence ? ` (confianza: ${(confidence * 100).toFixed(1)}%)` : ''
+  setBreed(raza)
 
-        if (isPet) {
-          setAnalysis(`Tu mascota es: ${raza}${confianza}`)
-        } else if (confidence && confidence >= 0.85) {
-          setAnalysis(`Podría ser: ${raza}${confianza}`)
-        } else {
-          setAnalysis('No aplica como mascota')
-        }
-      }
+  if (isPet) {
+    setAnalysis(`Tu mascota es: ${raza}${confianza}`)
+  } else if (confidence && confidence >= 0.85) {
+    setAnalysis(`Podría ser: ${raza}${confianza}`)
+  } else {
+    setAnalysis('No aplica como mascota')
+  }
+}
 
       reader.readAsDataURL(file)
     } catch (err) {
