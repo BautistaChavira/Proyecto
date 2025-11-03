@@ -1,4 +1,6 @@
 import fetch, { Response as FetchResponse } from 'node-fetch'
+import { HfInference } from '@huggingface/inference'
+
 
 export type IdentifyResult = {
   breed: string
@@ -104,62 +106,65 @@ export async function identifyImageFromBuffer(
   filename: string,
   contentType: string
 ): Promise<IdentifyResult> {
-  const AI_API_KEY = process.env.AI_API_KEY
-  const AI_MODEL = process.env.AI_MODEL // Ej: 'microsoft/resnet-50'
-  const AI_API_URL = process.env.AI_API_URL?.replace(/\/+$/, '') // Ej: 'https://router.huggingface.co'
+  const HF_API_KEY = process.env.AI_API_KEY
+  const HF_MODEL = process.env.AI_MODEL
+  const HF_API_URL = process.env.AI_API_URL?.replace(/\/+$/, '')
 
-  if (!AI_API_URL || !AI_MODEL || !AI_API_KEY) {
-    throw new AiError('Faltan variables de entorno AI_API_URL, AI_MODEL o AI_API_KEY', 'config')
-  }
+  const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY
+  const REPLICATE_MODEL = process.env.REPLICATE_MODEL
 
-  const fullUrl = `${AI_API_URL}/${AI_MODEL}`
+  const useReplicate = Boolean(REPLICATE_API_KEY && REPLICATE_MODEL)
 
   console.log('[AI] Configuración cargada:', {
-    AI_API_URL,
-    AI_MODEL,
-    AI_API_KEY: AI_API_KEY.slice(0, 8) + '...',
-    fullUrl,
+    proveedor: useReplicate ? 'Replicate' : 'Hugging Face',
+    modelo: useReplicate ? REPLICATE_MODEL : HF_MODEL,
     bufferSize: buffer.length,
     contentType,
     filename
   })
 
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${AI_API_KEY}`,
-    'Content-Type': contentType
-  }
-
   const startTime = Date.now()
-  let resp: FetchResponse
+  let result
 
   try {
-    console.log('[AI] Enviando imagen binaria a modelo directo:', {
-      url: fullUrl,
-      headers,
-      bufferSize: buffer.length
-    })
+    if (useReplicate) {
+      const base64 = buffer.toString('base64')
+      const response = await fetch(`https://api.replicate.com/v1/predictions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${REPLICATE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          version: REPLICATE_MODEL,
+          input: {
+            image: `data:${contentType};base64,${base64}`
+          }
+        })
+      })
 
-    resp = await fetch(fullUrl, {
-      method: 'POST',
-      headers,
-      body: buffer
-    })
+      const json = await response.json()
+      if (!response.ok || !json.output) {
+        throw new AiError(`Replicate error: ${json.detail || response.statusText}`, 'provider')
+      }
+
+      result = json.output
+    } else {
+      const hf = new HfInference(HF_API_KEY!)
+      const arrayBuffer = Uint8Array.from(buffer).buffer
+
+      result = await hf.imageClassification({
+        model: HF_MODEL!,
+        data: arrayBuffer
+      })
+    }
   } catch (err) {
-    console.error('[AI] Error de red o fetch:', err)
-    throw new AiError('Fetch failed: ' + (err instanceof Error ? err.message : String(err)), 'network')
+    console.error('[AI] Error en inferencia:', err)
+    throw new AiError('Error en inferencia: ' + (err instanceof Error ? err.message : String(err)), 'provider')
   }
 
   const duration = Date.now() - startTime
   console.log(`[AI] Tiempo de respuesta: ${duration}ms`)
-  console.log(`[AI] Código de estado: ${resp.status}`)
-
-  if (!resp.ok) {
-    const txt = await resp.text().catch(() => '')
-    console.warn('[AI] Respuesta no OK:', txt.slice(0, 300))
-    throw new AiError(`AI provider error: ${resp.status} ${txt}`, 'provider')
-  }
-
-  const result = await resp.json().catch(() => null)
   console.log('[AI] Resultado bruto recibido:', JSON.stringify(result).slice(0, 300) + '...')
 
   if (!Array.isArray(result) || !result[0]?.label) {
@@ -178,7 +183,6 @@ export async function identifyImageFromBuffer(
   })
 
   if (!isPet) {
-    console.warn('[AI] No es mascota:', label)
     return {
       breed: label,
       confidence: result[0].score,
