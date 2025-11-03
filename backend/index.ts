@@ -308,7 +308,7 @@ function startServer() {
 				)
 
 				console.log('[REGISTER] Usuario insertado:', insert.rows[0])
-				return res.status(201).json({ name: insert.rows[0].name })
+				return res.status(201).json({ id: insert.rows[0].id, name: insert.rows[0].name })
 			}
 
 			console.warn('[REGISTER] Usuario ya existe:', normalizedEmail)
@@ -436,8 +436,8 @@ function startServer() {
 				result: result.breed,
 				confidence: result.confidence,
 				isPet: result.isPet,
-				status: result.status,
-				species: result.species ?? null // opcional si lo estás usando
+				petStatus: result.status, // ← renombrado aquí para que no truene el pinche frontend mamon
+				species: result.species ?? null
 			})
 		} catch (err) {
 			console.error('Error atrapado en /api/analyze-photo')
