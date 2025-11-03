@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'
+import fetch, { Response as FetchResponse } from 'node-fetch'
 
 export type IdentifyResult = {
   breed: string
@@ -106,31 +106,48 @@ export async function identifyImageFromBuffer(
 ): Promise<IdentifyResult> {
   const AI_API_URL = process.env.AI_API_URL
   const AI_API_KEY = process.env.AI_API_KEY
+  const AI_MODEL = process.env.AI_MODEL ?? 'microsoft/resnet-50'
 
   console.log('Usando AI con:', {
     AI_API_URL,
-    AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...'
+    AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...',
+    AI_MODEL
   })
 
   if (!AI_API_URL) throw new AiError('AI_API_URL missing', 'config')
 
-  const base64 = buffer.toString('base64')
-  //aca el cambio de ultima hora
-  const payload = {
-    model: 'microsoft/resnet-50', // ← explícito
-    inputs: `data:${contentType};base64,${base64}`
-  }
-
+  const isRouter = AI_API_URL.endsWith('/hf-inference')
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${AI_API_KEY}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${AI_API_KEY}`
   }
 
-  const resp = await fetch(AI_API_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload)
-  })
+  let resp: FetchResponse
+
+  if (isRouter) {
+    // Modo router general: JSON + base64
+    const base64 = buffer.toString('base64')
+    const payload = {
+      model: AI_MODEL,
+      inputs: `data:${contentType};base64,${base64}`
+    }
+
+    headers['Content-Type'] = 'application/json'
+
+    resp = await fetch(AI_API_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    })
+  } else {
+    // Modo directo: imagen binaria
+    headers['Content-Type'] = contentType
+
+    resp = await fetch(`${AI_API_URL}/route/${AI_MODEL}`, {
+      method: 'POST',
+      headers,
+      body: buffer
+    })
+  }
 
   if (!resp.ok) {
     const txt = await resp.text().catch(() => '')
