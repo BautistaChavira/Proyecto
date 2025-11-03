@@ -21,7 +21,7 @@ import * as path from 'path';
 import { Client } from 'pg';
 
 async function main() {
-	const defaultDbUrl = process.env.DATABASE_URL || 'ejemplourl.com'; //Esta url hay que cambiarla
+	const defaultDbUrl = process.env.DATABASE_URL || 'postgresql://mascotasdb_x9qx_user:MQsvfT3gvPOT1sCUBKnjo693EEnH6r8K@dpg-d3vt2024d50c73e5otqg-a/mascotasdb_x9qx'; //Esta url hay que cambiarla
 	const targetUrl = new URL(defaultDbUrl);
 	const targetDbName = (targetUrl.pathname || '/mascotas').replace(/^\//, '') || 'mascotas';
 
