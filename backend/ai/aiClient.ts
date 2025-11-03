@@ -1,5 +1,4 @@
 import fetch, { Response as FetchResponse } from 'node-fetch'
-import { HfInference } from '@huggingface/inference'
 
 
 export type IdentifyResult = {
@@ -106,18 +105,16 @@ export async function identifyImageFromBuffer(
   filename: string,
   contentType: string
 ): Promise<IdentifyResult> {
-  const HF_API_KEY = process.env.AI_API_KEY
-  const HF_MODEL = process.env.AI_MODEL
-  const HF_API_URL = process.env.AI_API_URL?.replace(/\/+$/, '')
-
   const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY
   const REPLICATE_MODEL = process.env.REPLICATE_MODEL
 
-  const useReplicate = Boolean(REPLICATE_API_KEY && REPLICATE_MODEL)
+  if (!REPLICATE_API_KEY || !REPLICATE_MODEL) {
+    throw new AiError('Faltan variables de entorno REPLICATE_API_KEY o REPLICATE_MODEL', 'config')
+  }
 
   console.log('[AI] Configuración cargada:', {
-    proveedor: useReplicate ? 'Replicate' : 'Hugging Face',
-    modelo: useReplicate ? REPLICATE_MODEL : HF_MODEL,
+    proveedor: 'Replicate',
+    modelo: REPLICATE_MODEL,
     bufferSize: buffer.length,
     contentType,
     filename
@@ -127,37 +124,29 @@ export async function identifyImageFromBuffer(
   let result
 
   try {
-    if (useReplicate) {
-      const base64 = buffer.toString('base64')
-      const response = await fetch(`https://api.replicate.com/v1/predictions`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Token ${REPLICATE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          version: REPLICATE_MODEL,
-          input: {
-            image: `data:${contentType};base64,${base64}`
-          }
-        })
+    const base64 = buffer.toString('base64')
+    const imageData = `data:${contentType};base64,${base64}`
+
+    const response = await fetch(`https://api.replicate.com/v1/predictions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Token ${REPLICATE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        version: REPLICATE_MODEL,
+        input: {
+          image: imageData
+        }
       })
+    })
 
-      const json = await response.json()
-      if (!response.ok || !json.output) {
-        throw new AiError(`Replicate error: ${json.detail || response.statusText}`, 'provider')
-      }
-
-      result = json.output
-    } else {
-      const hf = new HfInference(HF_API_KEY!)
-      const arrayBuffer = Uint8Array.from(buffer).buffer
-
-      result = await hf.imageClassification({
-        model: HF_MODEL!,
-        data: arrayBuffer
-      })
+    const json = await response.json()
+    if (!response.ok || !json.output) {
+      throw new AiError(`Replicate error: ${json.detail || response.statusText}`, 'provider')
     }
+
+    result = json.output
   } catch (err) {
     console.error('[AI] Error en inferencia:', err)
     throw new AiError('Error en inferencia: ' + (err instanceof Error ? err.message : String(err)), 'provider')
@@ -177,7 +166,7 @@ export async function identifyImageFromBuffer(
 
   console.log('[AI] Clasificación:', {
     label,
-    score: result[0].score,
+    score: result[0].confidence,
     isPet,
     species
   })
@@ -185,7 +174,7 @@ export async function identifyImageFromBuffer(
   if (!isPet) {
     return {
       breed: label,
-      confidence: result[0].score,
+      confidence: result[0].confidence,
       status: 'no_aplica',
       isPet: false,
       species: null
@@ -194,7 +183,7 @@ export async function identifyImageFromBuffer(
 
   return {
     breed: label,
-    confidence: result[0].score,
+    confidence: result[0].confidence,
     status: 'ok',
     isPet: true,
     species
