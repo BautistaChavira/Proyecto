@@ -14,6 +14,9 @@ export default function ConsultaFoto({ user }: { user: { id: number; name: strin
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [guardado, setGuardado] = useState(false)
+  const [confidence, setConfidence] = useState<number | null>(null)
+  const [species, setSpecies] = useState<'dog' | 'cat' | null>(null)
+  const [petStatusFront, setPetStatus] = useState<'ok' | 'no_aplica' | null>(null)
 
   function onPick() {
     if (!user) {
@@ -35,33 +38,49 @@ export default function ConsultaFoto({ user }: { user: { id: number; name: strin
     try {
       const reader = new FileReader()
       reader.onload = async () => {
-  const base64 = reader.result as string
-  setPreview(base64)
+        const base64 = reader.result as string
+        setPreview(base64)
 
-  const res = await fetchWithTimeout(API_URLS.analyzePhoto, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_base64: base64 }),
-  })
+        const res = await fetchWithTimeout(API_URLS.analyzePhoto, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_base64: base64 }),
+        })
 
-  const { breed: raza, confidence, isPet } = res as {
-    breed: string
-    confidence?: number
-    isPet: boolean
-    status: 'ok' | 'no_aplica'
-  }
+        const {
+          result: raza,
+          confidence: conf,
+          isPet,
+          petStatus: petS,
+          species: tipo
+        } = res as {
+          result: string
+          confidence?: number
+          isPet: boolean
+          petStatus: 'ok' | 'no_aplica'
+          species?: 'dog' | 'cat' | null
+        }
 
-  const confianza = confidence ? ` (confianza: ${(confidence * 100).toFixed(1)}%)` : ''
-  setBreed(raza)
 
-  if (isPet) {
-    setAnalysis(`Tu mascota es: ${raza}${confianza}`)
-  } else if (confidence && confidence >= 0.85) {
-    setAnalysis(`Podría ser: ${raza}${confianza}`)
-  } else {
-    setAnalysis('No aplica como mascota')
-  }
-}
+        setBreed(raza)
+        setConfidence(conf ?? null)
+        setSpecies(tipo ?? null)
+        setPetStatus(petS ?? null)
+
+        if (isPet) {
+          setAnalysis(`Tu mascota es: ${raza}`)
+        } else {
+          setAnalysis(`No aplica como mascota (detectado: ${raza})`)
+        }
+        console.log('[IA] Respuesta completa:', res)
+
+
+        if (isPet) {
+          setAnalysis(`Tu mascota es: ${raza}`)
+        } else {
+          setAnalysis(`No aplica como mascota (detectado: ${raza})`)
+        }
+      }
 
       reader.readAsDataURL(file)
     } catch (err) {
@@ -126,6 +145,18 @@ export default function ConsultaFoto({ user }: { user: { id: number; name: strin
                 <div className="analysis-result">
                   <h3>Resultado de la IA</h3>
                   <p>{analysis}</p>
+                  {petStatusFront === 'ok' ? (
+                    <p><strong>Clasificación:</strong> Sí es una mascota</p>
+                  ) : petStatusFront === 'no_aplica' ? (
+                    <p><strong>Clasificación:</strong> No aplica como mascota</p>
+                  ) : null}
+
+                  {confidence !== null && (
+                    <p><strong>Confianza:</strong> {(confidence * 100).toFixed(1)}%</p>
+                  )}
+                  {species && (
+                    <p><strong>Especie detectada:</strong> {species === 'dog' ? 'Perro' : 'Gato'}</p>
+                  )}
                 </div>
               )}
 

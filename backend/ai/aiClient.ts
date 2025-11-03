@@ -20,7 +20,7 @@ export class AiError extends Error {
 // Lista ampliada de razas de perros y gatos en inglés
 const validBreeds = [
   // Especies generales
-  'dog', 'cat', 'bunny', 'hammster',
+  'dog', 'cat', 'bunny', 'hamster',
 
   // Razas de perro
   'doberman pinscher', 'doberman', 'golden retriever', 'german shepherd', 'labrador retriever',
