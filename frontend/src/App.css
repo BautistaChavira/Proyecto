@@ -3,21 +3,24 @@
   margin: 0;
   padding: 0;
   text-align: center;
+  
 }
 
 .navbar {
-  background-color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 0.75rem 1.25rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
+  height: 64px;
+  background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   z-index: 1000;
 }
+
 
 .nav-section {
   display: flex;
@@ -141,6 +144,7 @@
   padding: 2rem 1.5rem; /* keep some horizontal padding */
   width: 100%;
   box-sizing: border-box;
+  color : #ffe5e0;
 }
 
 /* Cards layout: stacked, wide, centered */
@@ -263,4 +267,15 @@
     max-width: 100%;
     height: 180px;
   }
+}
+
+.app-body {
+  padding-top: 64px; /* compensa la altura del navbar */
+}
+
+.user-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
 }

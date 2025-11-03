@@ -24,7 +24,7 @@ export default function Home({ onNavigate }: Props) {
           <div className="card-inner">
             <img className="card-image" src="https://tse4.mm.bing.net/th/id/OIP.2UKTmm4Lzd-gk9mi6KzyKAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Catálogo recomendado" />
             <div className="card-text">
-              <h2>Catálogo recomendado</h2>
+              <h2>Almanaque de razas</h2>
               <p>Muestra de todos los tipos y razas de mascotas que tenemos registrados con datos varios y consejos para su cuidado.</p>
             </div>
           </div>

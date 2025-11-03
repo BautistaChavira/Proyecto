@@ -1,0 +1,104 @@
+.content {
+  padding: 2rem;
+  max-width: 800px;
+  margin: auto;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.card-large {
+  background: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.card-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-text h2 {
+  margin-top: 0;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.card-text p {
+  margin-bottom: 1rem;
+  color: #555;
+}
+
+.upload-area {
+  margin-bottom: 1.5rem;
+}
+
+.primary-button {
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.primary-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.primary-button:hover:not(:disabled) {
+  background-color: #005fa3;
+}
+
+.preview {
+  margin-top: 1rem;
+}
+
+.preview-image {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.analysis-result {
+  margin-top: 1.5rem;
+  background-color: #eef6ff;
+  padding: 1rem;
+  border-left: 4px solid #0078d4;
+  border-radius: 6px;
+}
+
+.save-form {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.save-form input,
+.save-form textarea {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.success-message {
+  color: green;
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+.error-message {
+  color: red;
+  font-weight: bold;
+  margin-top: 1rem;
+}

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react'
 import './App.css'
 import { API_URLS, fetchWithTimeout } from './config'
+import './ConsultaFoto.css'
 
 const validBreeds = [
   'doberman pinscher', 'doberman', 'golden retriever', 'german shepherd', 'labrador retriever',

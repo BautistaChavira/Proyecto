@@ -1,0 +1,81 @@
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(800px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.catalog-card,
+.catalog-item {
+  background-color: #fffaf8;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  height: 100%;
+}
+
+.catalog-card:hover,
+.catalog-item:hover {
+  transform: translateY(-4px);
+}
+
+.card-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-image-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.card-image,
+.catalog-hero {
+  width: 40%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  margin-left: 30%;
+}
+
+.card-text,
+.catalog-body {
+  padding: 1rem;
+  background-color: #fffaf8;
+  color: #333;
+  position: relative;
+  z-index: 1;
+}
+
+.card-text h3,
+.catalog-body h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: #222;
+}
+
+.card-text p,
+.catalog-body p {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.back-button {
+  background-color: #ff7f66;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: #e85c4f;
+}
