@@ -108,10 +108,13 @@ export async function identifyImageFromBuffer(
   const AI_API_KEY = process.env.AI_API_KEY
   const AI_MODEL = process.env.AI_MODEL ?? 'microsoft/resnet-50'
 
-  console.log('Usando AI con:', {
+  console.log('[AI] Configuración cargada:', {
     AI_API_URL,
     AI_API_KEY: AI_API_KEY?.slice(0, 8) + '...',
-    AI_MODEL
+    AI_MODEL,
+    bufferSize: buffer.length,
+    contentType,
+    filename
   })
 
   if (!AI_API_URL) throw new AiError('AI_API_URL missing', 'config')
@@ -122,39 +125,63 @@ export async function identifyImageFromBuffer(
   }
 
   let resp: FetchResponse
+  const startTime = Date.now()
 
-  if (isRouter) {
-    // Modo router general: JSON + base64
-    const base64 = buffer.toString('base64')
-    const payload = {
-      model: AI_MODEL,
-      inputs: `data:${contentType};base64,${base64}`
+  try {
+    if (isRouter) {
+      const base64 = buffer.toString('base64')
+      const payload = {
+        model: AI_MODEL,
+        inputs: `data:${contentType};base64,${base64}`
+      }
+
+      headers['Content-Type'] = 'application/json'
+
+      console.log('[AI] Enviando a router general:', {
+        url: AI_API_URL,
+        headers,
+        payloadPreview: JSON.stringify(payload).slice(0, 200) + '...'
+      })
+
+      resp = await fetch(AI_API_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      })
+    } else {
+      headers['Content-Type'] = contentType
+
+      const finalUrl = `${AI_API_URL}/route/${AI_MODEL}`
+
+      console.log('[AI] Enviando a ruta directa:', {
+        url: finalUrl,
+        headers,
+        bufferSize: buffer.length
+      })
+
+      resp = await fetch(finalUrl, {
+        method: 'POST',
+        headers,
+        body: buffer
+      })
     }
-
-    headers['Content-Type'] = 'application/json'
-
-    resp = await fetch(AI_API_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    })
-  } else {
-    // Modo directo: imagen binaria
-    headers['Content-Type'] = contentType
-
-    resp = await fetch(`${AI_API_URL}/route/${AI_MODEL}`, {
-      method: 'POST',
-      headers,
-      body: buffer
-    })
+  } catch (err) {
+    console.error('[AI] Error de red o fetch:', err)
+    throw new AiError('Fetch failed: ' + (err instanceof Error ? err.message : String(err)), 'network')
   }
+
+  const duration = Date.now() - startTime
+  console.log(`[AI] Tiempo de respuesta: ${duration}ms`)
+  console.log(`[AI] Código de estado: ${resp.status}`)
 
   if (!resp.ok) {
     const txt = await resp.text().catch(() => '')
+    console.warn('[AI] Respuesta no OK:', txt.slice(0, 300))
     throw new AiError(`AI provider error: ${resp.status} ${txt}`, 'provider')
   }
 
   const result = await resp.json().catch(() => null)
+  console.log('[AI] Resultado bruto recibido:', JSON.stringify(result).slice(0, 300) + '...')
 
   if (!Array.isArray(result) || !result[0]?.label) {
     throw new AiError('No label found in response', 'no_label')
@@ -163,6 +190,13 @@ export async function identifyImageFromBuffer(
   const label = result[0].label.trim().toLowerCase()
   const isPet = esMascota(label)
   const species = isPet ? detectarEspecie(label) : null
+
+  console.log('[AI] Clasificación:', {
+    label,
+    score: result[0].score,
+    isPet,
+    species
+  })
 
   if (!isPet) {
     console.warn('[AI] No es mascota:', label)
