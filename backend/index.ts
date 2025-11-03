@@ -435,6 +435,9 @@ function startServer() {
 			return res.json({
 				result: result.breed,
 				confidence: result.confidence,
+				isPet: result.isPet,
+				status: result.status,
+				species: result.species ?? null // opcional si lo estás usando
 			})
 		} catch (err) {
 			console.error('Error atrapado en /api/analyze-photo')
