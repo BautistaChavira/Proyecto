@@ -115,7 +115,9 @@ export async function identifyImageFromBuffer(
   if (!AI_API_URL) throw new AiError('AI_API_URL missing', 'config')
 
   const base64 = buffer.toString('base64')
+  //aca el cambio de ultima hora
   const payload = {
+    model: 'microsoft/resnet-50', // ← explícito
     inputs: `data:${contentType};base64,${base64}`
   }
 
