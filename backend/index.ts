@@ -319,7 +319,7 @@ function startServer() {
 		}
 	})
 
-	//endpoint para guardar mascota
+	//endpoints para manejar mascotas personales
 	app.post('/api/save-pet', async (req, res) => {
 		try {
 			const { name, breed, description, user_id } = req.body as {
@@ -368,6 +368,51 @@ function startServer() {
 			return res.status(500).json({ error: 'insert_failed' })
 		}
 	})
+
+	app.post('/api/delete-pet', async (req, res) => {
+  try {
+    const { pet_id, user_id } = req.body as {
+      pet_id?: number
+      user_id?: number
+    }
+
+    console.log('[DELETE-PET] Datos recibidos:', { pet_id, user_id })
+
+    // Validaciones iniciales
+    if (!pet_id || !user_id) {
+      console.warn('[DELETE-PET] Faltan campos obligatorios')
+      return res.status(400).json({ error: 'missing_fields' })
+    }
+
+    if (typeof pet_id !== 'number' || typeof user_id !== 'number') {
+      console.warn('[DELETE-PET] Tipos inválidos:', { pet_id, user_id })
+      return res.status(400).json({ error: 'invalid_types' })
+    }
+
+    // Verificar que la mascota exista y pertenezca al usuario
+    const check = await pool.query(
+      'SELECT id FROM pets WHERE id = $1 AND user_id = $2 LIMIT 1',
+      [pet_id, user_id]
+    )
+
+    console.log('[DELETE-PET] Resultado de búsqueda:', check.rowCount)
+
+    if (check.rowCount === 0) {
+      console.warn('[DELETE-PET] Mascota no encontrada o no pertenece al usuario')
+      return res.status(404).json({ error: 'pet_not_found_or_unauthorized' })
+    }
+
+    // Eliminar la mascota
+    await pool.query('DELETE FROM pets WHERE id = $1 AND user_id = $2', [pet_id, user_id])
+    console.log('[DELETE-PET] Mascota eliminada:', pet_id)
+
+    return res.status(204).send()
+  } catch (err) {
+    console.error('[DELETE-PET] Error inesperado:', err)
+    return res.status(500).json({ error: 'delete_failed' })
+  }
+})
+
 	//endpoint para obtener mis macotas
 	app.get('/api/pets', async (req, res) => {
 		try {
@@ -390,6 +435,7 @@ function startServer() {
 			return res.status(500).json({ error: 'fetch_failed' })
 		}
 	})
+
 	//endpoints de recuperar contraseña
 
 	app.post('/api/analyze-photo', async (req, res) => {
