@@ -99,64 +99,43 @@ function detectarEspecie(label: string): 'dog' | 'cat' | null {
   return null
 }
 
-
 export async function identifyImageFromBuffer(
   buffer: Buffer,
   filename: string,
   contentType: string
 ): Promise<IdentifyResult> {
-  const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY
-  const REPLICATE_MODEL = process.env.REPLICATE_MODEL
+  const HF_TOKEN = process.env.HF_TOKEN
 
-  if (!REPLICATE_API_KEY || !REPLICATE_MODEL) {
-    throw new AiError('Faltan variables de entorno REPLICATE_API_KEY o REPLICATE_MODEL', 'config')
+  if (!HF_TOKEN) {
+    throw new AiError('Falta variable de entorno HF_TOKEN', 'config')
   }
 
-  console.log('[AI] Configuración cargada:', {
-    proveedor: 'Replicate',
-    modelo: REPLICATE_MODEL,
-    bufferSize: buffer.length,
-    contentType,
-    filename
-  })
-
-  const startTime = Date.now()
   let result
 
   try {
-    const base64 = buffer.toString('base64')
-    const imageData = `data:${contentType};base64,${base64}`
-
-    const response = await fetch(`https://api.replicate.com/v1/predictions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Token ${REPLICATE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        version: REPLICATE_MODEL,
-        input: {
-          image: imageData
-        }
-      })
-    })
+    const response = await fetch(
+      'https://router.huggingface.co/hf-inference/models/microsoft/resnet-50',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${HF_TOKEN}`,
+          'Content-Type': contentType
+        },
+        body: buffer
+      }
+    )
 
     const json = await response.json()
-    if (!response.ok || !json.output) {
-      throw new AiError(`Replicate error: ${json.detail || response.statusText}`, 'provider')
+    if (!response.ok || !Array.isArray(json)) {
+      throw new AiError(`Hugging Face error: ${json.error || response.statusText}`, 'provider')
     }
 
-    result = json.output
+    result = json
   } catch (err) {
-    console.error('[AI] Error en inferencia:', err)
     throw new AiError('Error en inferencia: ' + (err instanceof Error ? err.message : String(err)), 'provider')
   }
 
-  const duration = Date.now() - startTime
-  console.log(`[AI] Tiempo de respuesta: ${duration}ms`)
-  console.log('[AI] Resultado bruto recibido:', JSON.stringify(result).slice(0, 300) + '...')
-
-  if (!Array.isArray(result) || !result[0]?.label) {
+  if (!result[0]?.label) {
     throw new AiError('No label found in response', 'no_label')
   }
 
@@ -164,17 +143,10 @@ export async function identifyImageFromBuffer(
   const isPet = esMascota(label)
   const species = isPet ? detectarEspecie(label) : null
 
-  console.log('[AI] Clasificación:', {
-    label,
-    score: result[0].confidence,
-    isPet,
-    species
-  })
-
   if (!isPet) {
     return {
       breed: label,
-      confidence: result[0].confidence,
+      confidence: result[0].score,
       status: 'no_aplica',
       isPet: false,
       species: null
@@ -183,7 +155,7 @@ export async function identifyImageFromBuffer(
 
   return {
     breed: label,
-    confidence: result[0].confidence,
+    confidence: result[0].score,
     status: 'ok',
     isPet: true,
     species

@@ -7,7 +7,7 @@ import { identifyImageFromBuffer } from './ai/aiClient'
 dotenv.config()
 
 async function test() {
-  const filePath = 'C:\\Users\\Palet\\Downloads\\iStock-1223511966.jpg'
+  const filePath = 'C:\\Users\\Palet\\Downloads\\dog1.jpeg'
   const buffer = fs.readFileSync(filePath)
   const result = await identifyImageFromBuffer(buffer, 'imagen.jpg', 'image/jpeg')
   console.log('✅ Resultado IA:', result)
