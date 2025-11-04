@@ -34,7 +34,7 @@ export default function Home({ onNavigate }: Props) {
             <img className="card-image" src="https://img.freepik.com/fotos-premium/gato-tratando-colarse-pegatinas-signo-interrogacion_96270-405.jpg" alt="Curiosidades" />
             <div className="card-text">
               <h2>Curiosidades</h2>
-              <p>Datos curiosos sobre mascotas de razas aleatorias.</p>
+              <p>Datos curiosos sobre mascotas de razas aleatorias, que te sorprenderán por sus habilidades únicas, comportamientos inesperados y características poco conocidass.</p>
             </div>
           </div>
         </article>
@@ -51,4 +51,5 @@ export default function Home({ onNavigate }: Props) {
       </section>
     </main>
   )
+
 }
