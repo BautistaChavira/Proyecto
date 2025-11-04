@@ -94,6 +94,11 @@ Crear un servidor para página web en render, poner la url de la api como variab
 
 Desplegar el front.
 
+<img width="282" height="162" alt="image" src="https://github.com/user-attachments/assets/0d6cb953-ac5b-4b90-9449-a1ea00bb7caf" />
+
+
+
+
 Pruebas de la página en funcionamiento
 
 <img width="921" height="852" alt="image" src="https://github.com/user-attachments/assets/7eb9122d-e3d6-49e6-a38e-4ccc9dcf1aa0" />
