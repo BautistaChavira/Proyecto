@@ -566,7 +566,7 @@ function startServer() {
 		}
 	});
 
-	app.get('/categories', async (_req, res) => {
+	app.get('/api/categories', async (_req, res) => {
 		try {
 			const r = await pool.query('SELECT id, name, description, created_at FROM categories ORDER BY id');
 			res.json(r.rows);
