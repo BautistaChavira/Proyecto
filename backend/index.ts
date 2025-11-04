@@ -576,7 +576,7 @@ function startServer() {
 		}
 	});
 
-	app.get('/curiosidades', async (_req, res) => {
+	app.get('/api/curiosidades', async (_req, res) => {
 		try {
 			const r = await pool.query('SELECT id, title, content, image_url, tags, created_at FROM curiosidades WHERE visible = true ORDER BY created_at DESC');
 			res.json(r.rows);
