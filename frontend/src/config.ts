@@ -16,6 +16,7 @@ export const API_URLS = {
   
   // MisMascotas endpoints
   pets: `${API_BASE_URL}/pets`,
+  deletepet: `${API_BASE_URL}/delete-pet`,
 
   // GuardarMascota
   savepet: `${API_BASE_URL}/save-pet`,
