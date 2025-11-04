@@ -1,0 +1,40 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "dev": "ts-node index.ts",
+    "init-db": "ts-node init-db.ts",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "form-data": "^4.0.4",
+    "multer": "^2.0.2",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^7.0.10",
+    "pg": "^8.16.3",
+    "resend": "^6.4.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.9.1",
+    "@types/node-fetch": "^2.6.13",
+    "@types/nodemailer": "^7.0.3",
+    "@types/pg": "^8.15.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
