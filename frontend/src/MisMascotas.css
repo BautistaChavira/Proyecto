@@ -1,11 +1,11 @@
-.pet-grid {
+.mismasc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-top: 1rem;
 }
 
-.pet-card {
+.mismasc-card {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -14,22 +14,22 @@
   transition: transform 0.2s ease;
 }
 
-.pet-card:hover {
+.mismasc-card:hover {
   transform: translateY(-4px);
 }
 
-.pet-card h3 {
+.mismasc-card h3 {
   margin-top: 0;
   font-size: 1.2rem;
   color: #333;
 }
 
-.pet-card p {
+.mismasc-card p {
   margin: 0.5rem 0;
   color: #555;
 }
 
-.danger-button {
+.mismasc-danger-button {
   background-color: #d9534f;
   color: white;
   border: none;
@@ -38,6 +38,27 @@
   cursor: pointer;
   border-radius: 4px;
 }
-.danger-button:hover {
+
+.mismasc-danger-button:hover {
   background-color: #c9302c;
+}
+
+.mismasc-primary-button {
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.mismasc-primary-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.mismasc-primary-button:hover:not(:disabled) {
+  background-color: #005fa3;
 }

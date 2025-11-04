@@ -41,56 +41,81 @@ export default function MisMascotas({ onGoToConsulta, user }: Props) {
   }, [user])
 
   function handleDelete(petId: number) {
-  if (!user) return
-  fetch(`${API_URLS.deletepet}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      pet_id: petId,
-      user_id: user.id
+    if (!user) return
+    fetch(`${API_URLS.deletepet}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        pet_id: petId,
+        user_id: user.id
+      })
     })
-  })
-    .then(res => {
-      if (!res.ok) throw new Error('Error al eliminar')
-      setMascotas(prev => prev.filter(p => p.id !== petId))
-    })
-    .catch(err => {
-      console.error('[MisMascotas] Error al eliminar mascota:', err)
-      setError('No se pudo eliminar la mascota')
-    })
-}
+      .then(res => {
+        if (!res.ok) throw new Error('Error al eliminar')
+        setMascotas(prev => prev.filter(p => p.id !== petId))
+      })
+      .catch(err => {
+        console.error('[MisMascotas] Error al eliminar mascota:', err)
+        setError('No se pudo eliminar la mascota')
+      })
+  }
 
-  return (
-    <main className="content">
-      <section className="cards">
-        <article className="card-large">
-          <div className="card-inner">
-            <div className="card-text">
-              <h2>Mis Mascotas</h2>
-              {loading && <p>Cargando mascotas...</p>}
-              {error && <p className="error-message">{error}</p>}
-              {!loading && mascotas.length === 0 && !error && <p>No tienes mascotas guardadas aún.</p>}
-            </div>
+return (
+  <main className="mismasc-content">
+    <section className="mismasc-cards">
+      <article className="mismasc-card-large">
+        <div className="mismasc-card-inner">
+          <div className="mismasc-card-text">
+            <h2>Mis Mascotas</h2>
+            {loading && <p>Cargando mascotas...</p>}
+            {error && <p className="mismasc-error-message">{error}</p>}
+            {!loading && mascotas.length === 0 && !error && (
+              <p>No tienes mascotas guardadas aún.</p>
+            )}
           </div>
-        </article>
-
-        <div className="pet-grid">
-          {mascotas.map(pet => (
-            <article key={pet.id} className="pet-card">
-              <h3>{pet.name}</h3>
-              <p><strong>Raza:</strong> {pet.breed}</p>
-              <p><strong>Descripción:</strong> {pet.description || 'Sin descripción'}</p>
-              <button className="danger-button" onClick={() => handleDelete(pet.id)}>Eliminar</button>
-            </article>
-          ))}
         </div>
+      </article>
 
-        <div style={{ width: '90%', maxWidth: 1100, display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-          <button className="primary-button" onClick={onGoToConsulta}>Ir a Consulta por Foto</button>
-        </div>
-      </section>
-    </main>
-  )
+      <div className="mismasc-grid">
+        {mascotas.map((pet) => (
+          <article key={pet.id} className="mismasc-card">
+            <h3>{pet.name}</h3>
+            <p><strong>Raza:</strong> {pet.breed}</p>
+            <p><strong>Descripción:</strong> {pet.description || 'Sin descripción'}</p>
+            <button className="mismasc-danger-button" onClick={() => handleDelete(pet.id)}>
+              Eliminar
+            </button>
+          </article>
+        ))}
+      </div>
+
+      <div
+        style={{
+          width: '90%',
+          maxWidth: 1100,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginTop: '1rem',
+        }}
+      >
+        <div
+  style={{
+    width: '90%',
+    maxWidth: 1100,
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '1rem',
+  }}
+>
+  <button className="mismasc-primary-button" onClick={onGoToConsulta}>
+    Ir a Consulta por Foto
+  </button>
+</div>
+
+      </div>
+    </section>
+  </main>
+)
 }
