@@ -1,0 +1,106 @@
+/* Contenedor principal */
+.curio-content {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Sección de tarjetas */
+.curio-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Tarjeta grande de introducción */
+.curio-card-large {
+  background-color: #f5f5f5;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.curio-card-large .curio-card-text h2 {
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  color: #333;
+}
+
+.curio-card-large .curio-card-text p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/* Tarjetas individuales */
+.curio-card {
+  display: flex;
+  flex-direction: row;
+  background-color: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
+  align-items: stretch;
+}
+
+.curio-card:hover {
+  transform: scale(1.02);
+}
+
+.curio-card-inner {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
+.curio-card-image {
+  width: 200px;
+  height: auto;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-right: 1px solid #eee;
+}
+
+.curio-card-text {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.curio-card-text h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+  color: #222;
+}
+
+.curio-card-text p {
+  margin: 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+/* Estados de carga y error */
+.curio-error {
+  color: #c00;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .curio-card {
+    flex-direction: column;
+  }
+
+  .curio-card-image {
+    width: 100%;
+    height: 180px;
+    border-right: none;
+    border-bottom: 1px solid #eee;
+  }
+
+  .curio-card-text {
+    padding: 1rem;
+  }
+}

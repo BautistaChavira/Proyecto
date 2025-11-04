@@ -1,12 +1,12 @@
-.catalog-grid {
+.catalogo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(800px, 1fr));
   gap: 1.5rem;
   width: 100%;
 }
 
-.catalog-card,
-.catalog-item {
+.catalogo-card,
+.catalogo-item {
   background-color: #fffaf8;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -17,24 +17,24 @@
   height: 100%;
 }
 
-.catalog-card:hover,
-.catalog-item:hover {
+.catalogo-card:hover,
+.catalogo-item:hover {
   transform: translateY(-4px);
 }
 
-.card-inner {
+.catalogo-card-inner {
   display: flex;
   flex-direction: column;
 }
 
-.card-image-wrapper {
+.catalogo-image-wrapper {
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
-.card-image,
-.catalog-hero {
+.catalogo-image,
+.catalogo-hero {
   width: 40%;
   height: 200px;
   object-fit: cover;
@@ -42,8 +42,8 @@
   margin-left: 30%;
 }
 
-.card-text,
-.catalog-body {
+.catalogo-text,
+.catalogo-body {
   padding: 1rem;
   background-color: #fffaf8;
   color: #333;
@@ -51,21 +51,21 @@
   z-index: 1;
 }
 
-.card-text h3,
-.catalog-body h3 {
+.catalogo-text h3,
+.catalogo-body h3 {
   margin-top: 0;
   font-size: 1.2rem;
   color: #222;
 }
 
-.card-text p,
-.catalog-body p {
+.catalogo-text p,
+.catalogo-body p {
   margin: 0.5rem 0 0;
   font-size: 0.95rem;
   color: #555;
 }
 
-.back-button {
+.catalogo-back-button {
   background-color: #ff7f66;
   color: white;
   border: none;
@@ -76,6 +76,6 @@
   transition: background-color 0.3s ease;
 }
 
-.back-button:hover {
+.catalogo-back-button:hover {
   background-color: #e85c4f;
 }

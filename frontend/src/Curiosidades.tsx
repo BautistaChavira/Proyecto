@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import './Curiosidades.css'
 import { API_URLS } from './config'
 
 type Curiosidad = {
@@ -19,7 +20,10 @@ export default function Curiosidades() {
   useEffect(() => {
     setLoading(true)
     fetch(API_URLS.curiosidades)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Error al cargar curiosidades')
+        return res.json()
+      })
       .then(data => {
         setCuriosidades(Array.isArray(data) ? data : [])
         setError(null)
@@ -32,25 +36,25 @@ export default function Curiosidades() {
   }, [])
 
   return (
-    <main className="content">
-      <section className="cards">
-        <article className="card-large">
-          <div className="card-inner">
-            <div className="card-text">
+    <main className="curio-content">
+      <section className="curio-cards">
+        <article className="curio-card-large">
+          <div className="curio-card-inner">
+            <div className="curio-card-text">
               <h2>Curiosidades</h2>
               <p>Aquí encontrarás curiosidades sobre mascotas, datos interesantes y artículos cortos.</p>
             </div>
           </div>
         </article>
 
-        {loading && <p>Cargando curiosidades...</p>}
-        {error && <p className="error">{error}</p>}
+        {loading && <p className="curio-loading">Cargando curiosidades...</p>}
+        {error && <p className="curio-error">{error}</p>}
 
-        {curiosidades.map(c => (
-          <article key={c.id} className="card">
-            <div className="card-inner">
-              <img src={c.image_url} alt={c.title} className="card-image" />
-              <div className="card-text">
+        {!loading && !error && curiosidades.map(c => (
+          <article key={c.id} className="curio-card">
+            <div className="curio-card-inner">
+              <img src={c.image_url} alt={c.title} className="curio-card-image" />
+              <div className="curio-card-text">
                 <h3>{c.title}</h3>
                 <p>{c.content}</p>
               </div>
