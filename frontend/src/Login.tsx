@@ -24,43 +24,63 @@ export default function Login({ onClose, onLogin }: Props) {
   }
 
   async function submitLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setMessage(null)
+  e.preventDefault()
+  setMessage(null)
 
-    if (!username || !password) {
-      setMessage('Introduce usuario y contraseña')
+  if (!username || !password) {
+    setMessage('Introduce usuario y contraseña')
+    return
+  }
+
+  try {
+    setLoading(true)
+    const password_hash_client = await sha256Hex(password)
+
+    const response = await fetch(API_URLS.login, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password_hash_client })
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      switch (data.error) {
+        case 'missing_fields':
+          setMessage('Debes ingresar usuario y contraseña.')
+          break
+        case 'invalid_username':
+          setMessage('El nombre de usuario debe tener entre 3 y 255 caracteres.')
+          break
+        case 'invalid_password_hash':
+          setMessage('La contraseña no tiene el formato esperado.')
+          break
+        case 'invalid_credentials':
+          setMessage('Usuario o contraseña incorrectos.')
+          break
+        case 'login_failed':
+        default:
+          setMessage('Error inesperado al iniciar sesión. Intenta de nuevo más tarde.')
+          break
+      }
       return
     }
 
-    try {
-      setLoading(true)
-      const password_hash_client = await sha256Hex(password)
-
-      const data = await fetchWithTimeout<{ id?: number; name?: string; error?: string }>(API_URLS.login, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password_hash_client })
-      })
-
-      if (!data.name) {
-        setMessage(data.error || 'Error al iniciar sesión')
-        return
-      }
-
-      if (!data.id || !data.name) {
-        setMessage(data.error || 'Error al iniciar sesión')
-        return
-      }
-
-      onLogin({ id: data.id, name: data.name })
-      onClose()
-    } catch (err) {
-      console.error('Login error:', err)
-      setMessage(err instanceof Error ? err.message : 'Error de red o servidor')
-    } finally {
-      setLoading(false)
+    if (!data.id || !data.name) {
+      setMessage(data.message || 'Error al iniciar sesión')
+      return
     }
+
+    onLogin({ id: data.id, name: data.name })
+    onClose()
+  } catch (err) {
+    console.error('Login error:', err)
+    setMessage(err instanceof Error ? err.message : 'Error de red o servidor')
+  } finally {
+    setLoading(false)
   }
+}
+
 
   async function submitRegister(e: React.FormEvent) {
     e.preventDefault()

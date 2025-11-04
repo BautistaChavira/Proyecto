@@ -11,9 +11,6 @@ export const API_URLS = {
   register: `${API_BASE_URL}/register`,
   recover: `${API_BASE_URL}/recover`,
   
-  // User endpoints
-  profile: `${API_BASE_URL}/profile`,
-  
   // MisMascotas endpoints
   pets: `${API_BASE_URL}/pets`,
   deletepet: `${API_BASE_URL}/delete-pet`,
