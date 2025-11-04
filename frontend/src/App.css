@@ -279,3 +279,26 @@
   border-radius: 50%;
   object-fit: cover;
 }
+
+.huella {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 120px;
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.huella.izquierda {
+  left: 5%;
+}
+
+.huella.derecha {
+  right: 5%;
+}
+
+.app-body {
+  position: relative;
+  z-index: 1;
+}

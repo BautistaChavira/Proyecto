@@ -15,6 +15,16 @@ function App() {
 
 return (
   <>
+  <img src="/huella-left.png" className="huella izquierda" alt="Huella izquierda" />
+  <img src="/huella-right.png" className="huella derecha" alt="Huella derecha" />
+
+  <nav className="navbar">
+    {/* ... */}
+  </nav>
+
+  <div className="app-body">
+    {/* ... */}
+  </div>
     <nav className="navbar">
       <div className="nav-section">
         <button className="nav-link" onClick={() => setPage('home')}>Home</button>
