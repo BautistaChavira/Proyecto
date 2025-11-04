@@ -44,7 +44,7 @@ export default function Home({ onNavigate }: Props) {
             <img className="card-image" src="https://tse1.mm.bing.net/th/id/OIP.UA9dXRB-wqqH_w61gjvl8gHaHa?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Mis Mascotas" />
             <div className="card-text">
               <h2>Mis Mascotas</h2>
-              <p>Acceso rápido a tus mascotas guardadas y su información. Agrega, edita o elimina registros desde aquí.</p>
+              <p>Acceso rápido a tus mascotas guardadas y su información. Agrega entrando a consultas o elimina registros desde aquí.</p>
             </div>
           </div>
         </article>
@@ -53,3 +53,4 @@ export default function Home({ onNavigate }: Props) {
   )
 
 }
+
