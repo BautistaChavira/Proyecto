@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import './App.css'
-import { API_URLS, fetchWithTimeout } from './config'
+import { API_URLS } from './config'
 
 type Props = {
   onClose: () => void
@@ -83,35 +83,65 @@ export default function Login({ onClose, onLogin }: Props) {
 
 
   async function submitRegister(e: React.FormEvent) {
-    e.preventDefault()
-    setMessage(null)
+  e.preventDefault()
+  setMessage(null)
 
-    if (!username || !email || !password) {
-      setMessage('Rellena usuario, correo y contraseña')
+  if (!username || !email || !password) {
+    setMessage('Rellena usuario, correo y contraseña')
+    return
+  }
+
+  try {
+    setLoading(true)
+    const password_hash_client = await sha256Hex(password)
+
+    const response = await fetch(API_URLS.register, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password_hash_client, username }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      switch (data.error) {
+        case 'missing_fields':
+          setMessage('Rellena usuario, correo y contraseña.')
+          break
+        case 'invalid_email':
+          setMessage('El correo electrónico no tiene un formato válido.')
+          break
+        case 'invalid_username':
+          setMessage('El nombre de usuario debe tener entre 3 y 255 caracteres.')
+          break
+        case 'invalid_password_hash':
+          setMessage('La contraseña no tiene el formato esperado.')
+          break
+        case 'user_already_exists':
+          setMessage('Ya existe una cuenta registrada con ese correo.')
+          break
+        case 'register_failed':
+        default:
+          setMessage('Error inesperado al registrar. Intenta de nuevo más tarde.')
+          break
+      }
       return
     }
 
-    try {
-      setLoading(true)
-      const password_hash_client = await sha256Hex(password)
-
-      const data = await fetchWithTimeout<{ id?: number; name?: string; error?: string }>(API_URLS.register, {
-        method: 'POST',
-        body: JSON.stringify({ email, password_hash_client, username }),
-      })
-
-      if (!data.name) throw new Error('Respuesta inválida del servidor')
-
-      if (!data.id || !data.name) throw new Error('Respuesta inválida del servidor')
-
-      onLogin({ id: data.id, name: data.name })
-      onClose()
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error al registrar usuario')
-    } finally {
-      setLoading(false)
+    if (!data.id || !data.name) {
+      setMessage('Respuesta inválida del servidor')
+      return
     }
+
+    onLogin({ id: data.id, name: data.name })
+    onClose()
+  } catch (error) {
+    console.error('Register error:', error)
+    setMessage(error instanceof Error ? error.message : 'Error de red o servidor')
+  } finally {
+    setLoading(false)
   }
+}
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">
       <div className="modal">
