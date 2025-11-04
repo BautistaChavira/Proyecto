@@ -28,3 +28,16 @@
   margin: 0.5rem 0;
   color: #555;
 }
+
+.danger-button {
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.danger-button:hover {
+  background-color: #c9302c;
+}

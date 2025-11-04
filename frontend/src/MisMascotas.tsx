@@ -40,29 +40,52 @@ export default function MisMascotas({ onGoToConsulta, user }: Props) {
       .finally(() => setLoading(false))
   }, [user])
 
+  function handleDelete(petId: number) {
+  if (!user) return
+  fetch(`${API_URLS.deletepet}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      pet_id: petId,
+      user_id: user.id
+    })
+  })
+    .then(res => {
+      if (!res.ok) throw new Error('Error al eliminar')
+      setMascotas(prev => prev.filter(p => p.id !== petId))
+    })
+    .catch(err => {
+      console.error('[MisMascotas] Error al eliminar mascota:', err)
+      setError('No se pudo eliminar la mascota')
+    })
+}
+
   return (
     <main className="content">
       <section className="cards">
         <article className="card-large">
-  <div className="card-inner">
-    <div className="card-text">
-      <h2>Mis Mascotas</h2>
-      {loading && <p>Cargando mascotas...</p>}
-      {error && <p className="error-message">{error}</p>}
-      {!loading && mascotas.length === 0 && !error && <p>No tienes mascotas guardadas aún.</p>}
-    </div>
-  </div>
-</article>
+          <div className="card-inner">
+            <div className="card-text">
+              <h2>Mis Mascotas</h2>
+              {loading && <p>Cargando mascotas...</p>}
+              {error && <p className="error-message">{error}</p>}
+              {!loading && mascotas.length === 0 && !error && <p>No tienes mascotas guardadas aún.</p>}
+            </div>
+          </div>
+        </article>
 
-<div className="pet-grid">
-  {mascotas.map(pet => (
-    <article key={pet.id} className="pet-card">
-      <h3>{pet.name}</h3>
-      <p><strong>Raza:</strong> {pet.breed}</p>
-      <p><strong>Descripción:</strong> {pet.description || 'Sin descripción'}</p>
-    </article>
-  ))}
-</div>
+        <div className="pet-grid">
+          {mascotas.map(pet => (
+            <article key={pet.id} className="pet-card">
+              <h3>{pet.name}</h3>
+              <p><strong>Raza:</strong> {pet.breed}</p>
+              <p><strong>Descripción:</strong> {pet.description || 'Sin descripción'}</p>
+              <button className="danger-button" onClick={() => handleDelete(pet.id)}>Eliminar</button>
+            </article>
+          ))}
+        </div>
 
         <div style={{ width: '90%', maxWidth: 1100, display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
           <button className="primary-button" onClick={onGoToConsulta}>Ir a Consulta por Foto</button>

@@ -18,7 +18,7 @@ type BreedRow = {
 }
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'Cargando', title: 'A la espera de la base de datos', img: 'https://static.vecteezy.com/system/resources/thumbnails/009/261/207/original/loading-circle-icon-loading-gif-loading-screen-gif-loading-spinner-gif-loading-animation-loading-free-video.jpg' }
+  { id: 'Cargando', title: '', img: 'https://static.vecteezy.com/system/resources/thumbnails/009/261/207/original/loading-circle-icon-loading-gif-loading-screen-gif-loading-spinner-gif-loading-animation-loading-free-video.jpg' }
 ]
 
 import { API_URLS, fetchWithTimeout } from './config'
