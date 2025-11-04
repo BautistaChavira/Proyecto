@@ -43,9 +43,9 @@ export default function Catalogo() {
           title: row.name,
           img:
             row.name.toLowerCase() === 'perros'
-              ? '../public/perrorandom.jpg'
+              ? '/perrorandom.jpg'
               : row.name.toLowerCase() === 'gatos'
-                ? '../public/gatorandom.jpg'
+                ? '/gatorandom.jpg'
                 : `https://via.placeholder.com/800x400?text=${encodeURIComponent(row.name)}`
         }))
         if (transformed.length > 0) setCategories(transformed)
