@@ -576,7 +576,7 @@ function startServer() {
 		}
 	});
 
-	app.get('/curiosidades', async (_req, res) => {
+	app.get('/api/curiosidades', async (_req, res) => {
         try {
             const query = `
       SELECT id, title, content, image_url, created_at
