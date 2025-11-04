@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { API_URLS } from './config'
 
 type Curiosidad = {
   id: number
@@ -12,25 +13,22 @@ type Curiosidad = {
 
 export default function Curiosidades() {
   const [curiosidades, setCuriosidades] = useState<Curiosidad[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchCuriosidades() {
-      try {
-        const res = await fetch('/api/curiosidades')
-        if (!res.ok) throw new Error('Error al cargar curiosidades')
-        const data = await res.json()
-        setCuriosidades(data)
-      } catch (err) {
-        console.error('[Curiosidades] Error:', err)
+    setLoading(true)
+    fetch(API_URLS.curiosidades)
+      .then(res => res.json())
+      .then(data => {
+        setCuriosidades(Array.isArray(data) ? data : [])
+        setError(null)
+      })
+      .catch(err => {
+        console.error('[Curiosidades] Error al cargar curiosidades:', err)
         setError('No se pudieron cargar las curiosidades.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchCuriosidades()
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   return (
