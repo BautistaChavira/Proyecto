@@ -1,0 +1,152 @@
+/* Contenedor y disposición */
+.consultafoto-content {
+  padding: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.consultafoto-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Card large: quitar apariencia de "tarjeta" en el nav */
+.consultafoto-card-large {
+  background: transparent; /* sin fondo sólido que convierta en cuadro */
+  border: none;
+  box-shadow: none;
+  padding: 0; /* el spacing lo maneja el interior */
+  border-radius: 0;
+}
+
+/* Panel interior sutil donde colocar el contenido */
+.consultafoto-card-inner {
+  display: block;
+  padding: 1rem 0;
+}
+
+/* Área de contenido con un panel ligero (no obligatorio) */
+.consultafoto-panel {
+  background: rgba(255,255,255,0.92);
+  border-radius: 10px;
+  padding: 1.1rem;
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 1px 8px rgba(16,24,40,0.03);
+}
+
+/* Títulos y texto */
+.consultafoto-text h2 {
+  font-size: 1.6rem;
+  margin: 0 0 0.25rem 0;
+  color: #1f2937;
+}
+
+.consultafoto-text p {
+  margin: 0 0 0.75rem 0;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+/* Upload area */
+.consultafoto-upload-area {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  margin-top: .5rem;
+}
+
+/* Botón */
+.consultafoto-button {
+  background-color: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .18s ease, transform .08s ease;
+}
+
+.consultafoto-button:hover { background-color: #13803d; transform: translateY(-1px); }
+.consultafoto-button:disabled { background-color: #9ca3af; cursor: not-allowed; transform: none; }
+
+/* Preview */
+.consultafoto-preview {
+  margin-top: 1rem;
+}
+
+.consultafoto-preview h3 {
+  margin: 0 0 .5rem 0;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.consultafoto-preview-image {
+  max-width: 420px;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  display: block;
+  object-fit: cover;
+}
+
+/* Resultado de análisis (panel distinguible) */
+.consultafoto-analysis {
+  margin-top: 1rem;
+  padding: .9rem;
+  background-color: #fbfdff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+  color: #0f172a;
+}
+
+/* Formulario de guardado */
+.consultafoto-form {
+  margin-top: 1rem;
+  padding: .9rem;
+  background: transparent;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+.consultafoto-form input,
+.consultafoto-form textarea {
+  width: 100%;
+  margin-bottom: .65rem;
+  padding: .55rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: .98rem;
+  color: #111827;
+  background-color: #fff;
+  box-sizing: border-box;
+}
+
+/* Mensajes */
+.consultafoto-success { color: #15803d; font-weight: 700; margin-top: .5rem; }
+.consultafoto-error {
+  margin-top: .75rem;
+  padding: .6rem;
+  background-color: #fff1f2;
+  color: #991b1b;
+  border-left: 3px solid #ef4444;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Responsivo: evitar que el panel ocupe todo y deje el menú intacto */
+@media (min-width: 900px) {
+  .consultafoto-card-inner { display: flex; gap: 1.25rem; align-items: flex-start; }
+  .consultafoto-preview-image { max-width: 320px; }
+  .consultafoto-text { flex: 1 1 auto; }
+}
+
+/* Small screens */
+@media (max-width: 640px) {
+  .consultafoto-content { padding: 1rem; }
+  .consultafoto-panel { padding: .75rem; }
+  .consultafoto-preview-image { max-width: 100%; height: auto; }
+}
