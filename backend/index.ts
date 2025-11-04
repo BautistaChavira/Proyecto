@@ -576,15 +576,40 @@ function startServer() {
 		}
 	});
 
-	app.get('/api/curiosidades', async (_req, res) => {
-		try {
-			const r = await pool.query('SELECT id, title, content, image_url, tags, created_at FROM curiosidades WHERE visible = true ORDER BY created_at DESC');
-			res.json(r.rows);
-		} catch (err) {
-			console.error('Error fetching curiosidades:', err);
-			res.status(500).json({ error: 'failed_to_fetch_curiosidades' });
-		}
-	});
+	app.get('/curiosidades', async (_req, res) => {
+        try {
+            const query = `
+      SELECT id, title, content, image_url, created_at
+      FROM curiosidades
+      WHERE visible = true
+      ORDER BY created_at DESC
+    `
+
+            const result = await pool.query(query)
+
+            if (!result || !result.rows) {
+                console.warn('[CURIO] Consulta sin resultados o sin estructura válida')
+                return res.status(500).json({
+                    error: 'empty_response',
+                    message: 'No se pudieron obtener las curiosidades.'
+                })
+            }
+
+            if (result.rowCount === 0) {
+                console.info('[CURIO] No hay curiosidades visibles en la base de datos')
+                return res.status(200).json([]) // respuesta vacía pero válida
+            }
+
+            console.log(`[CURIO] Curiosidades obtenidas: ${result.rowCount}`)
+            return res.json(result.rows)
+        } catch (err) {
+            console.error('[CURIO] Error inesperado al obtener curiosidades:', err)
+            return res.status(500).json({
+                error: 'failed_to_fetch_curiosidades',
+                message: 'Ocurrió un error al obtener las curiosidades. Intenta de nuevo más tarde.'
+            })
+        }
+    })
 
 	app.get('/users', async (_req, res) => {
 		try {
